@@ -411,6 +411,57 @@
     });
   })();
 
+  /* ---------- Scroll progress bar ---------- */
+  (function () {
+    var bar = doc.createElement("div");
+    bar.className = "scroll-progress";
+    var span = doc.createElement("span");
+    bar.appendChild(span);
+    body.appendChild(bar);
+    var ticking = false;
+    function update() {
+      var h = docEl.scrollHeight - window.innerHeight;
+      var p = h > 0 ? clamp(window.scrollY / h, 0, 1) : 0;
+      span.style.width = (p * 100).toFixed(2) + "%";
+      ticking = false;
+    }
+    function onScroll() { if (!ticking) { ticking = true; requestAnimationFrame(update); } }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    if (lenis && lenis.on) lenis.on("scroll", onScroll);
+    window.addEventListener("resize", onScroll, { passive: true });
+    update();
+  })();
+
+  /* ---------- Magnetic CTAs ---------- */
+  if (finePointer && !reduceMotion) {
+    $all(".btn--lg, .site-header .btn").forEach(function (el) {
+      el.classList.add("magnetic");
+      el.addEventListener("mousemove", function (e) {
+        var b = el.getBoundingClientRect();
+        var x = (e.clientX - (b.left + b.width / 2)) * 0.28;
+        var y = (e.clientY - (b.top + b.height / 2)) * 0.28;
+        el.style.transform = "translate3d(" + x.toFixed(1) + "px," + (y - 3).toFixed(1) + "px,0)";
+      });
+      el.addEventListener("mouseleave", function () { el.style.transform = ""; });
+    });
+  }
+
+  /* ---------- Pointer tilt on cards & project tiles ---------- */
+  if (finePointer && !reduceMotion) {
+    $all(".card, .tile").forEach(function (el) {
+      var isTile = el.classList.contains("tile");
+      var maxT = isTile ? 3.4 : 5, lift = isTile ? 0 : -6;
+      el.addEventListener("mouseenter", function () { el.classList.add("is-tilting"); });
+      el.addEventListener("mousemove", function (e) {
+        var b = el.getBoundingClientRect();
+        var rx = (-((e.clientY - b.top) / b.height - 0.5) * maxT).toFixed(2);
+        var ry = (((e.clientX - b.left) / b.width - 0.5) * maxT).toFixed(2);
+        el.style.transform = "perspective(760px) rotateX(" + rx + "deg) rotateY(" + ry + "deg) translateY(" + lift + "px)";
+      });
+      el.addEventListener("mouseleave", function () { el.classList.remove("is-tilting"); el.style.transform = ""; });
+    });
+  }
+
   /* ---------- Footer year ---------- */
   var yearEl = $("#year");
   if (yearEl) yearEl.textContent = new Date().getFullYear();
