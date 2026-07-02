@@ -1523,3 +1523,9 @@ body.intro-active { overflow: hidden; }
   .xform__line { position: absolute; }
   .xform__line[data-i="2"] { position: relative; opacity: 1; transform: none; }
 }
+
+/* 3D build canvas (replaces the photo layers) */
+.xform__canvas { position: absolute; inset: 0; z-index: 0; }
+.xform__canvas canvas { width: 100%; height: 100%; display: block; }
+.xform__fallback { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
+.xform[data-3d] .xform__fallback { display: none; }

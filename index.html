@@ -27,7 +27,7 @@
   <link rel="preconnect" href="https://images.unsplash.com" crossorigin />
   <link rel="stylesheet" href="css/styles.css" />
   <!-- No-JS safety: never trap the user behind the intro curtain or an unbuilt scene -->
-  <noscript><style>.intro{display:none!important}body.intro-active{overflow:auto!important}.xform{height:auto!important}.xform__sticky{position:static!important;height:78vh!important}.xform__layer[data-stage="2"]{opacity:1!important}.xform__line[data-i="2"]{opacity:1!important;position:relative!important}</style></noscript>
+  <noscript><style>.intro{display:none!important}body.intro-active{overflow:auto!important}.xform{height:auto!important}.xform__sticky{position:static!important;height:78vh!important}.xform__line[data-i="2"]{opacity:1!important;position:relative!important}</style></noscript>
 
   <!-- Local business structured data -->
   <script type="application/ld+json">
@@ -301,9 +301,8 @@
     <!-- ============ TRANSFORMATION — scroll: land → structure → home ============ -->
     <section class="xform" id="build" aria-label="From raw land to finished build">
       <div class="xform__sticky">
-        <div class="xform__layer" data-stage="0" style="opacity:1"><img src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1900&q=72" alt="Raw development land at golden hour" loading="lazy" /></div>
-        <div class="xform__layer" data-stage="1"><img src="https://images.unsplash.com/photo-1672627170267-fca17bb54156?auto=format&fit=crop&w=1900&q=72" alt="Home under construction — structural framing rising" loading="lazy" /></div>
-        <div class="xform__layer" data-stage="2"><img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1900&q=72" alt="Finished luxury home delivered by DK3 Construction" loading="lazy" /></div>
+        <div class="xform__canvas"><canvas id="build-canvas"></canvas></div>
+        <img class="xform__fallback" src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1900&q=72" alt="Finished luxury home built by DK3 Construction" loading="lazy" />
         <div class="xform__scrim"></div>
 
         <div class="container xform__ui">
@@ -607,6 +606,8 @@
   </button>
 
   <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.20/dist/lenis.min.js" defer></script>
+  <script src="js/vendor/three.min.js" defer></script>
+  <script src="js/build3d.js" defer></script>
   <script src="js/main.js" defer></script>
 </body>
 </html>
