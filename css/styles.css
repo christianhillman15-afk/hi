@@ -60,6 +60,7 @@
   /* Type */
   --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
   --font-body: "Inter", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  --font-serif: "Fraunces", Georgia, "Times New Roman", serif;
 
   /* Layout */
   --container: 1240px;
@@ -1451,4 +1452,74 @@ body.intro-active { overflow: hidden; }
   .bpart { opacity: 1 !important; transform: none !important; }
   .build__stage-item { opacity: 1; }
   .build__hint { display: none; }
+}
+
+/* =============================================================
+   23. TRANSFORMATION — land → structure → finished (scroll scrub)
+   A pinned, cinematic 3-stage crossfade with serif kinetic type,
+   a chapter index and a progress bar. Recreates the reel effect.
+   ============================================================= */
+.xform { position: relative; height: 340vh; background: #000; }
+.xform__sticky { position: sticky; top: 0; height: 100vh; overflow: hidden; }
+.xform__layer { position: absolute; inset: 0; opacity: 0; will-change: opacity; }
+.xform__layer img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.06); }
+.xform__scrim {
+  position: absolute; inset: 0; z-index: 1;
+  background:
+    linear-gradient(180deg, rgba(6,8,11,0.55) 0%, rgba(6,8,11,0.05) 26%, rgba(6,8,11,0.35) 60%, rgba(6,8,11,0.9) 100%),
+    linear-gradient(90deg, rgba(6,8,11,0.7) 0%, rgba(6,8,11,0.1) 55%);
+}
+.xform__ui {
+  position: relative; z-index: 2; height: 100vh;
+  display: flex; flex-direction: column; justify-content: space-between;
+  padding-block: calc(var(--header-h) - 12px) clamp(28px, 5vh, 54px);
+  color: #fff;
+}
+.xform__top { display: flex; justify-content: space-between; align-items: center; gap: 20px;
+  font-family: var(--font-display); font-size: 0.74rem; letter-spacing: 0.24em; text-transform: uppercase; color: var(--on-dark-2); }
+.xform__brand { display: inline-flex; align-items: center; gap: 10px; color: #fff; }
+.xform__brand .d { width: 7px; height: 7px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 4px rgba(224,165,38,.2); }
+
+/* chapter index (right side) */
+.xform__index { position: absolute; right: var(--gutter); top: 50%; transform: translateY(-50%);
+  display: grid; gap: 16px; z-index: 3; text-align: right; }
+.xform__index li { position: relative; padding-right: 28px;
+  font-family: var(--font-display); font-size: 0.8rem; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--on-dark-3); transition: color 0.4s var(--ease); }
+.xform__index li::before { content: ""; position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+  width: 14px; height: 1px; background: currentColor; transition: width 0.4s var(--ease), background 0.4s var(--ease); }
+.xform__index li.active { color: var(--gold); }
+.xform__index li.active::before { width: 22px; background: var(--gold); }
+
+/* kinetic serif headline (left) */
+.xform__center { margin-top: auto; margin-bottom: auto; max-width: 24ch; }
+.xform__cap { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 22px;
+  font-family: var(--font-display); font-size: 0.74rem; letter-spacing: 0.24em; text-transform: uppercase; color: var(--gold-200); }
+.xform__cap::before { content: ""; width: 26px; height: 2px; background: var(--gold); }
+.xform__lines { position: relative; min-height: 2.6em; }
+.xform__line { position: absolute; inset: 0; margin: 0;
+  font-family: var(--font-serif); font-weight: 400; font-size: clamp(1.9rem, 4.4vw, 3.7rem);
+  line-height: 1.08; letter-spacing: -0.02em; color: #fff;
+  opacity: 0; transform: translateY(20px); transition: opacity 0.55s var(--ease), transform 0.55s var(--ease); }
+.xform__line em { font-style: italic; color: var(--gold); }
+.xform__line.active { opacity: 1; transform: none; }
+
+/* footer progress */
+.xform__foot { display: flex; align-items: center; gap: 20px; }
+.xform__progress { flex: 1; height: 2px; background: rgba(255,255,255,0.16); border-radius: 2px; overflow: hidden; }
+.xform__progress span { display: block; height: 100%; width: 0; background: var(--gold); }
+.xform__pct-wrap { font-family: var(--font-display); color: #fff; display: inline-flex; align-items: baseline; gap: 2px; }
+.xform__pct { font-size: 1.5rem; font-weight: 600; letter-spacing: -0.02em; }
+.xform__pctlbl { color: var(--gold); font-weight: 600; }
+
+@media (max-width: 680px) {
+  .xform__index { display: none; }
+  .xform__center { max-width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .xform { height: auto; }
+  .xform__sticky { position: static; height: 82vh; }
+  .xform__layer[data-stage="2"] { opacity: 1 !important; }
+  .xform__line { position: absolute; }
+  .xform__line[data-i="2"] { position: relative; opacity: 1; transform: none; }
 }

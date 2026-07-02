@@ -194,33 +194,27 @@
   var hpinBar = hpin ? $(".hpin__progress span", hpin) : null;
   var hpinActive = false;
 
-  var build = $(".build");
-  var buildParts = build ? $all(".bpart", build) : [];
-  var buildStages = build ? $all(".build__stage-item", build) : [];
-  var buildPct = build ? $("[data-build-pct]", build) : null;
-  var buildBg = build ? $(".build__bg", build) : null;
+  var xform = $(".xform");
+  var xLayers = xform ? $all(".xform__layer", xform) : [];
+  var xLines = xform ? $all(".xform__line", xform) : [];
+  var xIndex = xform ? $all(".xform__index li", xform) : [];
+  var xPct = xform ? $("[data-build-pct]", xform) : null;
+  var xBar = xform ? $(".xform__progress span", xform) : null;
 
   function updateBuild() {
-    if (!build || reduceMotion) return;
-    var total = build.offsetHeight - vh;
-    var p = total > 0 ? clamp(-build.getBoundingClientRect().top / total, 0, 1) : 0;
-    var span = 0.12;
-    for (var i = 0; i < buildParts.length; i++) {
-      var el = buildParts[i];
-      var at = parseFloat(el.getAttribute("data-at")) || 0;
-      var lp = clamp((p - (at - span)) / span, 0, 1);
-      var op = lp;
-      var out = el.getAttribute("data-out");
-      if (out !== null) op *= clamp(1 - (p - parseFloat(out)) / 0.08, 0, 1);
-      el.style.opacity = op;
-      el.style.transform = "translateY(" + ((1 - lp) * 26).toFixed(1) + "px)";
-    }
-    if (buildPct) buildPct.textContent = Math.round(p * 100);
-    if (buildBg) buildBg.style.opacity = clamp((p - 0.72) / 0.22, 0, 1) * 0.6;
-    if (buildStages.length) {
-      var idx = Math.min(Math.floor(p * buildStages.length), buildStages.length - 1);
-      for (var j = 0; j < buildStages.length; j++) buildStages[j].classList.toggle("active", j === idx);
-    }
+    if (!xform || reduceMotion) return;
+    var total = xform.offsetHeight - vh;
+    var p = total > 0 ? clamp(-xform.getBoundingClientRect().top / total, 0, 1) : 0;
+    // three-stage crossfade (land -> structure -> finished)
+    var a = p * 2;
+    if (xLayers[0]) xLayers[0].style.opacity = clamp(1 - a, 0, 1);
+    if (xLayers[1]) xLayers[1].style.opacity = clamp(Math.min(a, 2 - a), 0, 1);
+    if (xLayers[2]) xLayers[2].style.opacity = clamp(a - 1, 0, 1);
+    var idx = Math.max(0, Math.min(Math.round(a), 2));
+    for (var i = 0; i < xLines.length; i++) xLines[i].classList.toggle("active", i === idx);
+    for (var j = 0; j < xIndex.length; j++) xIndex[j].classList.toggle("active", j === idx);
+    if (xPct) xPct.textContent = Math.round(p * 100);
+    if (xBar) xBar.style.width = (p * 100).toFixed(1) + "%";
   }
 
   function setupHpin() {
@@ -261,10 +255,10 @@
       hpinTrack.style.transform = "translate3d(" + (-x).toFixed(2) + "px,0,0)";
       if (hpinBar) hpinBar.style.width = (p * 100).toFixed(1) + "%";
     }
-    // scroll-built section
+    // transformation section
     updateBuild();
   }
-  if (parallaxEls.length || hpin || build) {
+  if (parallaxEls.length || hpin || xform) {
     setupHpin();
     var ticking = false;
     function onFx() {

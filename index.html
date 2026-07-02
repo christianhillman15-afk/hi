@@ -22,12 +22,12 @@
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;1,500&family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
   <link rel="preconnect" href="https://images.unsplash.com" crossorigin />
   <link rel="stylesheet" href="css/styles.css" />
-  <!-- No-JS safety: never show the intro curtain if scripts are disabled -->
-  <noscript><style>.intro{display:none!important}body.intro-active{overflow:auto!important}.build{height:auto!important}.build__sticky{position:static!important;height:auto!important;padding-block:90px}.bpart{opacity:1!important;transform:none!important}</style></noscript>
+  <!-- No-JS safety: never trap the user behind the intro curtain or an unbuilt scene -->
+  <noscript><style>.intro{display:none!important}body.intro-active{overflow:auto!important}.xform{height:auto!important}.xform__sticky{position:static!important;height:78vh!important}.xform__layer[data-stage="2"]{opacity:1!important}.xform__line[data-i="2"]{opacity:1!important;position:relative!important}</style></noscript>
 
   <!-- Local business structured data -->
   <script type="application/ld+json">
@@ -298,92 +298,40 @@
       </div>
     </section>
 
-    <!-- ============ SCROLL-BUILT SECTION ============ -->
-    <section class="build" id="build">
-      <div class="build__sticky">
-        <div class="build__bg"><img src="https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=1600&q=70" alt="" loading="lazy" /></div>
-        <div class="build__grid"></div>
-        <div class="container build__inner">
-          <div class="build__copy">
-            <span class="eyebrow on-dark">Watch it come together</span>
-            <h2 class="h2">From bare ground to finished build.</h2>
-            <div class="build__pct-wrap">
-              <span class="build__pct" data-build-pct>0</span>
-              <span class="build__pct-label">Project<br>complete</span>
-            </div>
-            <div class="build__stages">
-              <div class="build__stage-item active"><span class="s-num">01</span><span><span class="s-t">Site Prep &amp; Excavation</span> — <span class="s-d">clearing, grading &amp; earthmoving.</span></span></div>
-              <div class="build__stage-item"><span class="s-num">02</span><span><span class="s-t">Foundation</span> — <span class="s-d">footings and slab poured to spec.</span></span></div>
-              <div class="build__stage-item"><span class="s-num">03</span><span><span class="s-t">Framing</span> — <span class="s-d">precision structure rises floor by floor.</span></span></div>
-              <div class="build__stage-item"><span class="s-num">04</span><span><span class="s-t">Enclosure</span> — <span class="s-d">roof, windows &amp; weather‑tight envelope.</span></span></div>
-              <div class="build__stage-item"><span class="s-num">05</span><span><span class="s-t">Finish &amp; Handover</span> — <span class="s-d">details, walkthrough &amp; the keys.</span></span></div>
+    <!-- ============ TRANSFORMATION — scroll: land → structure → home ============ -->
+    <section class="xform" id="build" aria-label="From raw land to finished build">
+      <div class="xform__sticky">
+        <div class="xform__layer" data-stage="0" style="opacity:1"><img src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1900&q=72" alt="Raw development land at golden hour" loading="lazy" /></div>
+        <div class="xform__layer" data-stage="1"><img src="https://images.unsplash.com/photo-1672627170267-fca17bb54156?auto=format&fit=crop&w=1900&q=72" alt="Home under construction — structural framing rising" loading="lazy" /></div>
+        <div class="xform__layer" data-stage="2"><img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1900&q=72" alt="Finished luxury home delivered by DK3 Construction" loading="lazy" /></div>
+        <div class="xform__scrim"></div>
+
+        <div class="container xform__ui">
+          <div class="xform__top">
+            <span class="xform__brand"><span class="d"></span> DK3 · Design‑Build</span>
+            <span class="xform__est">Fort Lauderdale, FL</span>
+          </div>
+
+          <ul class="xform__index" aria-hidden="true">
+            <li data-i="0" class="active">Land</li>
+            <li data-i="1">Structure</li>
+            <li data-i="2">Delivered</li>
+          </ul>
+
+          <div class="xform__center">
+            <span class="xform__cap">Watch it come together</span>
+            <div class="xform__lines">
+              <h2 class="xform__line active" data-i="0">It starts with <em>raw ground.</em></h2>
+              <h2 class="xform__line" data-i="1">Structure, <em>made permanent.</em></h2>
+              <h2 class="xform__line" data-i="2">Delivered to <em>the last detail.</em></h2>
             </div>
           </div>
 
-          <div class="build__scene">
-            <svg class="build__svg" viewBox="0 0 640 500" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <!-- 01 ground -->
-              <g class="bpart" data-at="0.05">
-                <line x1="40" y1="440" x2="600" y2="440" stroke="#E0A526" stroke-width="2.5" stroke-linecap="round"/>
-                <path d="M70 449h18M112 453h24M156 449h15M462 451h30M516 447h26" stroke="rgba(224,165,38,.5)" stroke-width="2" stroke-linecap="round"/>
-              </g>
-              <!-- 02 foundation -->
-              <g class="bpart" data-at="0.15">
-                <rect x="200" y="416" width="240" height="24" fill="rgba(224,165,38,.16)" stroke="#E0A526" stroke-width="2.5"/>
-              </g>
-              <!-- 03 floor 1 -->
-              <g class="bpart" data-at="0.27">
-                <rect x="210" y="356" width="220" height="60" stroke="#E6E3DA" stroke-width="2"/>
-                <path d="M246 356v60M282 356v60M354 356v60M392 356v60" stroke="rgba(230,227,218,.32)" stroke-width="1.5"/>
-              </g>
-              <!-- 03 floor 2 -->
-              <g class="bpart" data-at="0.38">
-                <rect x="210" y="296" width="220" height="60" stroke="#E6E3DA" stroke-width="2"/>
-                <path d="M246 296v60M282 296v60M318 296v60M354 296v60M392 296v60" stroke="rgba(230,227,218,.32)" stroke-width="1.5"/>
-              </g>
-              <!-- 03 floor 3 -->
-              <g class="bpart" data-at="0.49">
-                <rect x="210" y="236" width="220" height="60" stroke="#E6E3DA" stroke-width="2"/>
-                <path d="M246 236v60M282 236v60M318 236v60M354 236v60M392 236v60" stroke="rgba(230,227,218,.32)" stroke-width="1.5"/>
-              </g>
-              <!-- crane (present during framing, leaves at finish) -->
-              <g class="bpart" data-at="0.24" data-out="0.82">
-                <line x1="486" y1="150" x2="486" y2="440" stroke="#E0A526" stroke-width="2.5"/>
-                <line x1="360" y1="150" x2="542" y2="150" stroke="#E0A526" stroke-width="2.5"/>
-                <path d="M486 150l-16-22M486 150l16-22" stroke="#E0A526" stroke-width="2"/>
-                <line x1="382" y1="150" x2="382" y2="196" stroke="rgba(224,165,38,.75)" stroke-width="1.5"/>
-                <rect x="374" y="196" width="16" height="12" fill="#E0A526"/>
-              </g>
-              <!-- 04 roof / parapet -->
-              <g class="bpart" data-at="0.62">
-                <rect x="198" y="220" width="244" height="16" fill="rgba(230,227,218,.1)" stroke="#E6E3DA" stroke-width="2.5"/>
-                <rect x="300" y="196" width="42" height="24" fill="rgba(230,227,218,.06)" stroke="#E6E3DA" stroke-width="2"/>
-              </g>
-              <!-- 04 windows -->
-              <g class="bpart" data-at="0.76">
-                <rect x="230" y="250" width="30" height="24" fill="rgba(224,165,38,.85)"/>
-                <rect x="305" y="250" width="30" height="24" fill="rgba(224,165,38,.85)"/>
-                <rect x="380" y="250" width="30" height="24" fill="rgba(224,165,38,.85)"/>
-                <rect x="230" y="310" width="30" height="24" fill="rgba(224,165,38,.85)"/>
-                <rect x="305" y="310" width="30" height="24" fill="rgba(224,165,38,.85)"/>
-                <rect x="380" y="310" width="30" height="24" fill="rgba(224,165,38,.85)"/>
-                <rect x="230" y="372" width="30" height="24" fill="rgba(224,165,38,.85)"/>
-                <rect x="380" y="372" width="30" height="24" fill="rgba(224,165,38,.85)"/>
-              </g>
-              <!-- 05 door + finish -->
-              <g class="bpart" data-at="0.9">
-                <rect x="303" y="390" width="34" height="26" fill="rgba(224,165,38,.25)" stroke="#E0A526" stroke-width="2"/>
-                <path d="M180 440l30-30M460 440l-30-30" stroke="rgba(230,227,218,.4)" stroke-width="1.5" stroke-linecap="round"/>
-              </g>
-              <!-- 05 complete flag -->
-              <g class="bpart" data-at="0.97">
-                <line x1="321" y1="196" x2="321" y2="166" stroke="#E0A526" stroke-width="2.5"/>
-                <path d="M321 168l24 7-24 7z" fill="#E0A526"/>
-              </g>
-            </svg>
+          <div class="xform__foot">
+            <div class="xform__progress"><span></span></div>
+            <div class="xform__pct-wrap"><span class="xform__pct" data-build-pct>0</span><span class="xform__pctlbl">%</span></div>
           </div>
         </div>
-        <div class="build__hint"><span class="l"></span> Keep scrolling <span class="l"></span></div>
       </div>
     </section>
 
