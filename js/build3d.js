@@ -70,17 +70,70 @@
     for (var i = 0; i < 5000; i++) { var v = 90 + rand() * 90 | 0; g.fillStyle = "rgb(" + v + "," + v + "," + v + ")"; g.fillRect(rand() * s, rand() * s, 1, 1); }
   }, 3);
 
+  /* ---- normal maps: real surface relief under raking light (Sobel from a height canvas) ---- */
+  function normalTex(drawHeight, rep) {
+    var s = 128;
+    var hc = document.createElement("canvas"); hc.width = hc.height = s;
+    var hg = hc.getContext("2d"); drawHeight(hg, s);
+    var src = hg.getImageData(0, 0, s, s).data;
+    var out = hg.createImageData(s, s), od = out.data;
+    function H(x, y) { x = (x + s) % s; y = (y + s) % s; return src[(y * s + x) * 4] / 255; }
+    for (var y = 0; y < s; y++) for (var x = 0; x < s; x++) {
+      var dx = (H(x - 1, y) - H(x + 1, y)) * 2.2, dy = (H(x, y - 1) - H(x, y + 1)) * 2.2;
+      var len = Math.sqrt(dx * dx + dy * dy + 1), i = (y * s + x) * 4;
+      od[i] = (dx / len * 0.5 + 0.5) * 255; od[i + 1] = (dy / len * 0.5 + 0.5) * 255;
+      od[i + 2] = (1 / len * 0.5 + 0.5) * 255; od[i + 3] = 255;
+    }
+    hg.putImageData(out, 0, 0);
+    var t = new THREE.CanvasTexture(hc); t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    if (rep) t.repeat.set(rep, rep);
+    return t; // left in linear space — do NOT tag sRGB
+  }
+  var stuccoN = normalTex(function (g, s) {
+    g.fillStyle = "#808080"; g.fillRect(0, 0, s, s);
+    for (var i = 0; i < 9000; i++) { var v = 96 + rand() * 96 | 0; g.fillStyle = "rgba(" + v + "," + v + "," + v + ",0.5)"; g.fillRect(rand() * s, rand() * s, 1.6, 1.6); }
+  }, 3);
+  var paverN = normalTex(function (g, s) {
+    g.fillStyle = "#b6b6b6"; g.fillRect(0, 0, s, s);
+    g.strokeStyle = "#2c2c2c"; g.lineWidth = 4;
+    for (var i = 0; i <= s; i += 32) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i, s); g.stroke(); g.beginPath(); g.moveTo(0, i); g.lineTo(s, i); g.stroke(); }
+  }, 4);
+  var woodN = normalTex(function (g, s) {
+    g.fillStyle = "#909090"; g.fillRect(0, 0, s, s);
+    for (var i = 0; i < 46; i++) { var x = rand() * s; g.strokeStyle = "rgba(35,35,35," + (0.25 + rand() * 0.4).toFixed(2) + ")"; g.lineWidth = 1 + rand() * 2; g.beginPath(); g.moveTo(x, 0); g.bezierCurveTo(x + 7, s / 3, x - 7, 2 * s / 3, x, s); g.stroke(); }
+  }, 1);
+  var stoneN = normalTex(function (g, s) {
+    g.fillStyle = "#a4a4a4"; g.fillRect(0, 0, s, s);
+    g.strokeStyle = "#242424"; g.lineWidth = 3; var row = 0;
+    for (var y = 0; y <= s; y += 26) { g.beginPath(); g.moveTo(0, y); g.lineTo(s, y); g.stroke(); var off = (row % 2) * 20; for (var x = off; x <= s; x += 40) { g.beginPath(); g.moveTo(x, y); g.lineTo(x, y + 26); g.stroke(); } row++; }
+  }, 2);
+
   /* ---- sky + fog + stars ---- */
-  function skyTex(a, b, c) {
-    var cv = document.createElement("canvas"); cv.width = 16; cv.height = 256;
-    var g = cv.getContext("2d"); var gr = g.createLinearGradient(0, 0, 0, 256);
+  function skyTex(a, b, c, sun, sx, sy, clouds) {
+    var w = 512, h = 256, cv = document.createElement("canvas"); cv.width = w; cv.height = h;
+    var g = cv.getContext("2d"), gr = g.createLinearGradient(0, 0, 0, h);
     gr.addColorStop(0, a); gr.addColorStop(0.55, b); gr.addColorStop(1, c);
-    g.fillStyle = gr; g.fillRect(0, 0, 16, 256);
+    g.fillStyle = gr; g.fillRect(0, 0, w, h);
+    if (clouds) { // soft horizontal cloud banks
+      g.globalCompositeOperation = "lighter";
+      for (var ci = 0; ci < 22; ci++) {
+        var cx = rand() * w, cy = h * (0.12 + rand() * 0.32), cw = 30 + rand() * 90, ch = 6 + rand() * 12;
+        var cg = g.createRadialGradient(cx, cy, 0, cx, cy, cw);
+        cg.addColorStop(0, "rgba(255,255,255," + (0.10 + rand() * 0.14).toFixed(2) + ")"); cg.addColorStop(1, "rgba(255,255,255,0)");
+        g.fillStyle = cg; g.save(); g.translate(cx, cy); g.scale(1, ch / cw); g.beginPath(); g.arc(0, 0, cw, 0, 6.283); g.fill(); g.restore();
+      }
+      g.globalCompositeOperation = "source-over";
+    }
+    if (sun) { // sun disk + halo
+      var rg = g.createRadialGradient(sx * w, sy * h, 0, sx * w, sy * h, h * 0.55);
+      rg.addColorStop(0, sun); rg.addColorStop(0.06, sun); rg.addColorStop(0.22, "rgba(255,240,210,0.35)"); rg.addColorStop(1, "rgba(0,0,0,0)");
+      g.globalCompositeOperation = "lighter"; g.fillStyle = rg; g.fillRect(0, 0, w, h); g.globalCompositeOperation = "source-over";
+    }
     var t = new THREE.CanvasTexture(cv); t.mapping = THREE.EquirectangularReflectionMapping;
     if (THREE.SRGBColorSpace) t.colorSpace = THREE.SRGBColorSpace; return t;
   }
-  var skyDay = skyTex("#a6c8e8", "#d6e6f1", "#efe7d6");
-  var skyDusk = skyTex("#141f3c", "#4c3f63", "#f0a457");
+  var skyDay = skyTex("#8fbce6", "#cfe3f0", "#eef1ea", "rgba(255,251,236,0.95)", 0.62, 0.26, true);
+  var skyDusk = skyTex("#111a38", "#4a3a63", "#f0894b", "rgba(255,150,80,0.98)", 0.70, 0.44, false);
   scene.background = skyDay; scene.environment = skyDay;
   scene.fog = new THREE.Fog(0xcfdae0, 50, 135);
   var starPos = [];
@@ -104,7 +157,7 @@
     roof:   new THREE.MeshStandardMaterial({ color: 0x2b323a, roughness: 0.6, metalness: 0.25 }),
     fascia: new THREE.MeshStandardMaterial({ color: 0x20262d, roughness: 0.5 }),
     band:   new THREE.MeshStandardMaterial({ color: 0xb4ab9c, roughness: 0.82 }),
-    glass:  new THREE.MeshStandardMaterial({ color: 0x9fc0d8, roughness: 0.05, metalness: 0.5, transparent: true, opacity: 0.5, emissive: 0x000000, envMapIntensity: 1.6 }),
+    glass:  new THREE.MeshPhysicalMaterial({ color: 0x9fc0d8, roughness: 0.06, metalness: 0, transparent: true, opacity: 0.42, emissive: 0x000000, envMapIntensity: 2.6, clearcoat: 1, clearcoatRoughness: 0.08, ior: 1.45, reflectivity: 0.62 }),
     mullion:new THREE.MeshStandardMaterial({ color: 0x272b31, roughness: 0.5, metalness: 0.4 }),
     door:   new THREE.MeshStandardMaterial({ color: 0x5c3f24, roughness: 0.5 }),
     garage: new THREE.MeshStandardMaterial({ color: 0xd0cabe, roughness: 0.8 }),
@@ -122,6 +175,18 @@
     car:    new THREE.MeshStandardMaterial({ color: 0x30363d, roughness: 0.35, metalness: 0.5 }),
     lightGlow: new THREE.MeshStandardMaterial({ color: 0xffca7a, emissive: 0xffb457, emissiveIntensity: 0, roughness: 0.4 })
   };
+
+  M.mulch = new THREE.MeshStandardMaterial({ color: 0x3a2716, roughness: 1 });
+  M.tile  = new THREE.MeshStandardMaterial({ color: 0x2b7f96, roughness: 0.35, metalness: 0.1 });
+  M.pot   = new THREE.MeshStandardMaterial({ color: 0x8d8577, roughness: 0.9 });
+
+  /* ---- surface relief: give the finish materials real normal-mapped texture ---- */
+  M.wall.normalMap = stuccoN;  M.wall.normalScale = new THREE.Vector2(0.5, 0.5);
+  M.wall2.normalMap = stuccoN; M.wall2.normalScale = new THREE.Vector2(0.5, 0.5);
+  M.garage.normalMap = stuccoN; M.garage.normalScale = new THREE.Vector2(0.42, 0.42);
+  M.stone.normalMap = stoneN;  M.stone.normalScale = new THREE.Vector2(0.75, 0.75);
+  M.wood.normalMap = woodN;    M.wood.normalScale = new THREE.Vector2(0.45, 0.45);
+  M.drive.normalMap = paverN;  M.drive.normalScale = new THREE.Vector2(0.8, 0.8);
 
   var parts = [], glassMeshes = [], frameParts = [], temps = [], lights = [];
   function reg(mesh, t0, t1, mode, opt) {
@@ -252,6 +317,12 @@
   reg(box(8.9, 0.35, 0.18, M.fascia, 0.4, roofY + 0.55, -0.3 - 3.3), 0.62, 0.7, "drop", {});
   reg(box(0.18, 0.35, 6.7, M.fascia, 0.4 + 4.35, roofY + 0.55, -0.3), 0.62, 0.7, "drop", {});
   reg(box(0.18, 0.35, 6.7, M.fascia, 0.4 - 4.35, roofY + 0.55, -0.3), 0.62, 0.7, "drop", {});
+  // pale coping cap that overhangs the parapet (crisp roofline shadow line)
+  var capY = roofY + 0.75;
+  reg(box(9.06, 0.1, 0.3, M.coping, 0.4, capY, -0.3 + 3.3), 0.63, 0.71, "drop", {});
+  reg(box(9.06, 0.1, 0.3, M.coping, 0.4, capY, -0.3 - 3.3), 0.63, 0.71, "drop", {});
+  reg(box(0.3, 0.1, 6.86, M.coping, 0.4 + 4.35, capY, -0.3), 0.63, 0.71, "drop", {});
+  reg(box(0.3, 0.1, 6.86, M.coping, 0.4 - 4.35, capY, -0.3), 0.63, 0.71, "drop", {});
   // slim floor-line reveal between storeys (warm grey, not a heavy dark ledge)
   reg(box(9.14, 0.18, 7.14, M.band, 0, SLAB_TOP + GF_H + 0.02, 0), 0.56, 0.66, "drop", {});
   reg(box(1.75, 0.35, 4.7, M.roof, -3.4, SLAB_TOP + 2.7 + 0.18, 4.0), 0.58, 0.68, "drop", {}); // garage roof
@@ -264,12 +335,16 @@
   function addWin(w, h, x, y, z, face, t0, t1) {
     if (face === "front") {
       reg(box(w + 0.14, h + 0.14, 0.06, M.mullion, x, y, z - 0.02), t0, t1, "fade", { opacity: 1 });      // slim frame
-      reg(box(w, h, 0.05, M.glass, x, y, z - 0.14), t0 + 0.01, t1 + 0.01, "fade", { opacity: 0.5 });        // recessed pane
-      reg(box(0.045, h, 0.09, M.mullion, x, y, z - 0.05), t0 + 0.02, t1 + 0.02, "fade", { opacity: 1 });    // single vertical mullion
+      reg(box(w, h, 0.05, M.glass, x, y, z - 0.16), t0 + 0.01, t1 + 0.01, "fade", { opacity: 0.5 });        // recessed pane
+      reg(box(0.045, h, 0.09, M.mullion, x, y, z - 0.06), t0 + 0.02, t1 + 0.02, "fade", { opacity: 1 });    // single vertical mullion
+      reg(box(w + 0.28, 0.09, 0.22, M.stone, x, y - h / 2 - 0.09, z + 0.02), t0 + 0.02, t1 + 0.02, "fade", { opacity: 1 }); // projecting sill
+      reg(box(w + 0.22, 0.07, 0.14, M.band, x, y + h / 2 + 0.09, z + 0.01), t0 + 0.02, t1 + 0.02, "fade", { opacity: 1 });  // header lintel
     } else {
       reg(box(0.06, h + 0.14, w + 0.14, M.mullion, x + 0.02, y, z), t0, t1, "fade", { opacity: 1 });
-      reg(box(0.05, h, w, M.glass, x - 0.14, y, z), t0 + 0.01, t1 + 0.01, "fade", { opacity: 0.5 });
-      reg(box(0.09, h, 0.045, M.mullion, x - 0.05, y, z), t0 + 0.02, t1 + 0.02, "fade", { opacity: 1 });
+      reg(box(0.05, h, w, M.glass, x - 0.16, y, z), t0 + 0.01, t1 + 0.01, "fade", { opacity: 0.5 });
+      reg(box(0.09, h, 0.045, M.mullion, x - 0.06, y, z), t0 + 0.02, t1 + 0.02, "fade", { opacity: 1 });
+      reg(box(0.22, 0.09, w + 0.28, M.stone, x + 0.02, y - h / 2 - 0.09, z), t0 + 0.02, t1 + 0.02, "fade", { opacity: 1 }); // projecting sill
+      reg(box(0.14, 0.07, w + 0.22, M.band, x + 0.01, y + h / 2 + 0.09, z), t0 + 0.02, t1 + 0.02, "fade", { opacity: 1 });  // header lintel
     }
   }
   // ground floor: picture window + entry-side window (aligned to columns)
@@ -290,6 +365,16 @@
   reg(box(2.8, 0.16, 1.2, M.fascia, -0.3, SLAB_TOP + 3.0, frontZ + 0.5), 0.73, 0.82, "drop", {}); // canopy
   reg(box(2.2, 0.16, 0.7, M.stone, -0.3, 0.16, frontZ + 0.9), 0.78, 0.86, "fade", { opacity: 1 }); // step 1
   reg(box(1.7, 0.16, 0.5, M.stone, -0.3, 0.32, frontZ + 0.6), 0.79, 0.87, "fade", { opacity: 1 }); // step 2
+  // wall sconces flanking the entry (glow at dusk)
+  function sconce(x) { var m = box(0.07, 0.5, 0.09, M.lightGlow, x, SLAB_TOP + 1.95, frontZ + 0.06); reg(m, 0.79, 0.86, "fade", { opacity: 1, noshadow: true }); lights.push(m); }
+  sconce(-1.62); sconce(0.98);
+  // brushed-steel house numbers on the wood-slat panel
+  for (var hn = 0; hn < 3; hn++) reg(box(0.14, 0.24, 0.05, M.steel, -1.5 + hn * 0.22, SLAB_TOP + 2.35, frontZ + 0.12), 0.8, 0.87, "fade", { opacity: 1, noshadow: true });
+  // downspout on the front-right corner
+  reg(box(0.11, GF_H + UF_H - 0.2, 0.11, M.dark, 4.42, SLAB_TOP + (GF_H + UF_H) / 2 - 0.1, 3.4), 0.62, 0.7, "fade", { opacity: 1 });
+  // entry planters with clipped shrubs
+  function planter(x, z) { var g = new THREE.Group(); g.add(box(0.6, 0.55, 0.6, M.pot, 0, 0.28, 0)); var b = new THREE.Mesh(new THREE.IcosahedronGeometry(0.42, 0), M.hedge.clone()); b.position.y = 0.75; g.add(b); g.position.set(x, 0, z); return reg(g, 0.82, 0.9, "scale"); }
+  planter(-1.55, frontZ + 1.05); planter(0.95, frontZ + 1.05);
   // garage door with slats
   reg(box(2.8, 2.1, 0.1, M.mullion, -3.4, SLAB_TOP + 1.05, 4.0 + 2.3 + 0.02), 0.72, 0.82, "fade", { opacity: 1 });
   for (var gs = 0; gs < 5; gs++) reg(box(2.7, 0.05, 0.12, M.dark, -3.4, SLAB_TOP + 0.35 + gs * 0.42, 4.0 + 2.3 + 0.04), 0.73, 0.83, "fade", { opacity: 1 });
@@ -305,8 +390,14 @@
   reg(box(1.5, 0.06, 4.6, M.drive, -0.3, 0.05, 7.2, 0), 0.82, 0.9, "fade", { opacity: 1, noshadow: true }); // walkway
   // pool + coping + deck + spa
   reg(box(7.6, 0.14, 4.6, M.coping, 3.2, 0.07, 7.4), 0.82, 0.9, "fade", { opacity: 1, noshadow: true }); // deck
+  reg(box(6.7, 0.42, 3.8, M.tile, 3.2, 0.24, 7.4), 0.83, 0.9, "fade", { opacity: 1, noshadow: true }); // waterline tile shell
   reg(box(6.4, 0.5, 3.5, M.pool, 3.2, 0.28, 7.4), 0.84, 0.94, "scale"); // water
   reg(box(1.4, 0.55, 1.4, M.pool, 6.2, 0.3, 5.6), 0.85, 0.94, "scale"); // spa
+  // submerged pool light (glows at dusk)
+  var poolLight = box(0.5, 0.06, 0.5, M.lightGlow, 1.6, 0.14, 7.4); reg(poolLight, 0.86, 0.94, "fade", { opacity: 1, noshadow: true }); lights.push(poolLight);
+  // mulch beds under the facade plantings
+  reg(box(11.2, 0.05, 1.3, M.mulch, 0, 0.05, frontZ + 0.95), 0.82, 0.9, "fade", { opacity: 1, noshadow: true });
+  reg(box(13, 0.05, 0.9, M.mulch, 0, 0.05, 9.2), 0.84, 0.92, "fade", { opacity: 1, noshadow: true });
   function lounger(x, z) { var g = new THREE.Group(); g.add(box(1.7, 0.12, 0.7, M.coping, 0, 0.35, 0)); var bk = box(0.7, 0.12, 0.7, M.coping, 0.6, 0.55, 0); bk.rotation.z = -0.6; g.add(bk); g.position.set(x, 0, z); return reg(g, 0.86, 0.94, "scale"); }
   lounger(0.6, 8.4); lounger(1.7, 8.4);
   // hedges along the facade
@@ -395,9 +486,13 @@
     sun.color.setHSL(lerp(0.11, 0.055, e2), 0.6, lerp(0.9, 0.68, e2));
     sun.intensity = lerp(1.75, 1.0, e2);
     hemi.intensity = lerp(0.45, 0.32, e2);
-    // glass: cool sky-tint by day (never pure-black voids on weak GPUs) → warm interior glow at dusk
+    // glass: reflective cool sky-tint by day → solid, warmly-lit interior at dusk
     var geHex = e2 < 0.5 ? 0x2c4159 : 0xffb457;
-    for (var g = 0; g < glassMeshes.length; g++) { glassMeshes[g].material.emissive.setHex(geHex); glassMeshes[g].material.emissiveIntensity = lerp(0.42, 1.95, e2); }
+    for (var g = 0; g < glassMeshes.length; g++) {
+      var gmat = glassMeshes[g].material;
+      gmat.emissive.setHex(geHex); gmat.emissiveIntensity = lerp(0.42, 2.4, e2);
+      gmat.opacity = gmat.opacity + (0.9 - gmat.opacity) * (e2 * e2); // lit windows read solid at night
+    }
     for (var li = 0; li < lights.length; li++) lights[li].material.emissiveIntensity = e2 * 2.2;
     stars.material.opacity = e2 * 0.9; stars.visible = e2 > 0.02;
     var wantDusk = e2 > 0.45;
