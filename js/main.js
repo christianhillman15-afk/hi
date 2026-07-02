@@ -194,6 +194,35 @@
   var hpinBar = hpin ? $(".hpin__progress span", hpin) : null;
   var hpinActive = false;
 
+  var build = $(".build");
+  var buildParts = build ? $all(".bpart", build) : [];
+  var buildStages = build ? $all(".build__stage-item", build) : [];
+  var buildPct = build ? $("[data-build-pct]", build) : null;
+  var buildBg = build ? $(".build__bg", build) : null;
+
+  function updateBuild() {
+    if (!build || reduceMotion) return;
+    var total = build.offsetHeight - vh;
+    var p = total > 0 ? clamp(-build.getBoundingClientRect().top / total, 0, 1) : 0;
+    var span = 0.12;
+    for (var i = 0; i < buildParts.length; i++) {
+      var el = buildParts[i];
+      var at = parseFloat(el.getAttribute("data-at")) || 0;
+      var lp = clamp((p - (at - span)) / span, 0, 1);
+      var op = lp;
+      var out = el.getAttribute("data-out");
+      if (out !== null) op *= clamp(1 - (p - parseFloat(out)) / 0.08, 0, 1);
+      el.style.opacity = op;
+      el.style.transform = "translateY(" + ((1 - lp) * 26).toFixed(1) + "px)";
+    }
+    if (buildPct) buildPct.textContent = Math.round(p * 100);
+    if (buildBg) buildBg.style.opacity = clamp((p - 0.72) / 0.22, 0, 1) * 0.6;
+    if (buildStages.length) {
+      var idx = Math.min(Math.floor(p * buildStages.length), buildStages.length - 1);
+      for (var j = 0; j < buildStages.length; j++) buildStages[j].classList.toggle("active", j === idx);
+    }
+  }
+
   function setupHpin() {
     if (!hpin || !hpinTrack) return;
     var wide = window.innerWidth >= 900;
@@ -232,8 +261,10 @@
       hpinTrack.style.transform = "translate3d(" + (-x).toFixed(2) + "px,0,0)";
       if (hpinBar) hpinBar.style.width = (p * 100).toFixed(1) + "%";
     }
+    // scroll-built section
+    updateBuild();
   }
-  if (parallaxEls.length || hpin) {
+  if (parallaxEls.length || hpin || build) {
     setupHpin();
     var ticking = false;
     function onFx() {

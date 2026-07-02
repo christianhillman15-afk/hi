@@ -1385,3 +1385,70 @@ body.intro-active { overflow: hidden; }
 .cursor__ring { position: fixed; width: 38px; height: 38px; border: 1.5px solid #fff; border-radius: 50%; transform: translate(-50%, -50%); transition: width 0.28s var(--ease), height 0.28s var(--ease), background 0.28s ease; }
 .cursor.is-hover .cursor__ring { width: 62px; height: 62px; background: rgba(255,255,255,0.12); }
 @media (hover: none), (pointer: coarse) { .cursor { display: none; } }
+
+/* =============================================================
+   22. SCROLL-BUILT SECTION — "watch it come together"
+   A pinned, scroll-scrubbed sequence where a building assembles
+   stage-by-stage as you scroll. Driven by JS (updateScrollFx).
+   ============================================================= */
+.build { position: relative; height: 360vh; background: var(--ink-950); }
+.build__sticky {
+  position: sticky; top: 0; height: 100vh; overflow: hidden;
+  display: flex; align-items: center;
+}
+.build__bg { position: absolute; inset: 0; z-index: 0; opacity: 0; }
+.build__bg img { width: 100%; height: 100%; object-fit: cover; }
+.build__bg::after { content: ""; position: absolute; inset: 0; background: rgba(9,12,16,0.72); }
+.build__grid {
+  position: absolute; inset: 0; z-index: 1; opacity: 0.5;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+  background-size: 46px 46px;
+  -webkit-mask-image: radial-gradient(120% 80% at 60% 50%, #000 40%, transparent 78%);
+  mask-image: radial-gradient(120% 80% at 60% 50%, #000 40%, transparent 78%);
+}
+.build__inner {
+  position: relative; z-index: 2; width: 100%;
+  display: grid; grid-template-columns: 0.9fr 1.1fr; gap: clamp(24px,4vw,64px);
+  align-items: center;
+}
+@media (max-width: 860px) { .build__inner { grid-template-columns: 1fr; gap: 24px; } }
+
+.build__copy .eyebrow { margin-bottom: 20px; }
+.build__copy h2 { color: #fff; margin-bottom: 30px; }
+.build__pct-wrap { display: flex; align-items: flex-end; gap: 18px; margin-bottom: 26px; }
+.build__pct { font-family: var(--font-display); font-weight: 600; font-size: clamp(3rem,7vw,5.4rem); line-height: 0.9; letter-spacing: -0.04em; color: #fff; }
+.build__pct::after { content: "%"; color: var(--gold); font-size: 0.5em; vertical-align: super; margin-left: 2px; }
+.build__pct-label { font-family: var(--font-display); font-size: 0.74rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--on-dark-2); padding-bottom: 12px; }
+
+.build__stages { display: grid; gap: 2px; }
+.build__stage-item {
+  display: flex; gap: 16px; align-items: baseline;
+  padding: 12px 0; border-top: 1px solid var(--line-dark-2);
+  opacity: 0.4; transition: opacity 0.4s var(--ease), padding-left 0.4s var(--ease);
+}
+.build__stage-item:last-child { border-bottom: 1px solid var(--line-dark-2); }
+.build__stage-item .s-num { font-family: var(--font-display); font-size: 0.78rem; font-weight: 600; letter-spacing: 0.12em; color: var(--gold); flex: none; width: 30px; }
+.build__stage-item .s-t { font-family: var(--font-display); font-weight: 600; font-size: 1.05rem; color: #fff; }
+.build__stage-item .s-d { color: var(--on-dark-2); font-size: 0.9rem; }
+.build__stage-item.active { opacity: 1; padding-left: 10px; }
+.build__stage-item.active .s-num { color: var(--gold); }
+
+.build__scene { position: relative; width: 100%; }
+.build__svg { width: 100%; height: auto; overflow: visible; }
+.bpart { transform-box: fill-box; transform-origin: center bottom; opacity: 0; transform: translateY(26px); will-change: opacity, transform; }
+.build__hint {
+  position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%); z-index: 3;
+  font-family: var(--font-display); font-size: 0.68rem; letter-spacing: 0.24em; text-transform: uppercase; color: var(--on-dark-3);
+  display: flex; align-items: center; gap: 10px;
+}
+.build__hint .l { width: 30px; height: 1px; background: var(--gold); display: inline-block; }
+
+@media (prefers-reduced-motion: reduce) {
+  .build { height: auto; }
+  .build__sticky { position: static; height: auto; padding-block: clamp(60px,9vw,110px); }
+  .bpart { opacity: 1 !important; transform: none !important; }
+  .build__stage-item { opacity: 1; }
+  .build__hint { display: none; }
+}
