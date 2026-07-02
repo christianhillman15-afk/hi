@@ -47,6 +47,29 @@
   fill.position.set(-8, 6, -6);
   scene.add(fill);
 
+  /* ---- sky gradient (background + reflections) & fog ---- */
+  function skyTex(a, b, c) {
+    var cv = document.createElement("canvas"); cv.width = 16; cv.height = 256;
+    var g = cv.getContext("2d"); var gr = g.createLinearGradient(0, 0, 0, 256);
+    gr.addColorStop(0, a); gr.addColorStop(0.55, b); gr.addColorStop(1, c);
+    g.fillStyle = gr; g.fillRect(0, 0, 16, 256);
+    var t = new THREE.CanvasTexture(cv); t.mapping = THREE.EquirectangularReflectionMapping;
+    if (THREE.SRGBColorSpace) t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  }
+  var skyDay = skyTex("#a9c9e8", "#d6e6f1", "#eee6d6");
+  var skyDusk = skyTex("#1b2947", "#5b4a66", "#eaa25c");
+  scene.background = skyDay; scene.environment = skyDay;
+  scene.fog = new THREE.Fog(0xcfdae0, 48, 125);
+
+  // faint stars for the dusk finish
+  var starPos = [];
+  for (var st = 0; st < 140; st++) starPos.push((Math.random() - 0.5) * 180, 34 + Math.random() * 55, -55 - Math.random() * 55);
+  var starGeo = new THREE.BufferGeometry();
+  starGeo.setAttribute("position", new THREE.Float32BufferAttribute(starPos, 3));
+  var stars = new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xfff3d0, size: 0.5, transparent: true, opacity: 0, depthWrite: false }));
+  scene.add(stars);
+
   /* ---- materials ---- */
   var M = {
     slab:   new THREE.MeshStandardMaterial({ color: 0x9c968b, roughness: 0.95 }),
@@ -57,7 +80,8 @@
     wall2:  new THREE.MeshStandardMaterial({ color: 0xd8d0c2, roughness: 0.85 }),
     roof:   new THREE.MeshStandardMaterial({ color: 0x2c333c, roughness: 0.6, metalness: 0.2 }),
     trim:   new THREE.MeshStandardMaterial({ color: 0x3b424b, roughness: 0.6 }),
-    glass:  new THREE.MeshStandardMaterial({ color: 0x9fc0d8, roughness: 0.08, metalness: 0.2, transparent: true, opacity: 0.62, emissive: 0x000000 }),
+    glass:  new THREE.MeshStandardMaterial({ color: 0x9fc0d8, roughness: 0.05, metalness: 0.5, transparent: true, opacity: 0.5, emissive: 0x000000, envMapIntensity: 1.5 }),
+    mullion:new THREE.MeshStandardMaterial({ color: 0x2a2e35, roughness: 0.5, metalness: 0.4 }),
     door:   new THREE.MeshStandardMaterial({ color: 0x6a4a2c, roughness: 0.6 }),
     garage: new THREE.MeshStandardMaterial({ color: 0xcfc9bd, roughness: 0.8 }),
     drive:  new THREE.MeshStandardMaterial({ color: 0x8f8b82, roughness: 1 }),
@@ -96,6 +120,11 @@
     .rotation.x = -Math.PI / 2;
   parts[parts.length - 1].position.y = 0.02;
 
+  // blueprint site grid — drawn first, fades out as the slab is poured
+  var grid = new THREE.GridHelper(15, 15, 0x74d4e2, 0x2f7f8c);
+  grid.position.y = 0.05; grid.material.transparent = true; grid.material.opacity = 0.9;
+  scene.add(grid);
+
   var SLAB_TOP = 0.5;
   /* ---- 01 foundation slab ---- */
   reg(boxB(10, SLAB_TOP, 8, M.slab, 0, 0, 0), 0.06, 0.16, "growY");
@@ -131,22 +160,40 @@
   // ground-floor roof ledge over the setback
   reg(box(9.2, 0.35, 7.2, M.trim, 0, SLAB_TOP + GF_H + 0.05, 0), 0.56, 0.66, "drop", {});
 
-  /* ---- 05 glass + doors ---- */
+  /* ---- 05 framed glass + doors ---- */
   var frontZ = 3.55, sideX = 4.55;
-  // ground-floor front glass (living)
-  reg(box(3.4, 2.2, 0.08, M.glass, 1.4, SLAB_TOP + 1.4, frontZ), 0.70, 0.80, "fade", { opacity: 0.6 });
-  reg(box(1.6, 2.2, 0.08, M.glass, -1.7, SLAB_TOP + 1.4, frontZ), 0.71, 0.81, "fade", { opacity: 0.6 });
+  // framed window: dark surround + glass + mullion bars
+  function addWin(w, h, x, y, z, face, t0, t1) {
+    if (face === "front") {
+      reg(box(w + 0.18, h + 0.18, 0.05, M.mullion, x, y, z - 0.03), t0, t1, "fade", { opacity: 1 });
+      reg(box(w, h, 0.08, M.glass, x, y, z), t0 + 0.01, t1 + 0.01, "fade", { opacity: 0.5 });
+      reg(box(0.05, h, 0.11, M.mullion, x, y, z + 0.01), t0 + 0.02, t1 + 0.02, "fade", { opacity: 1 });
+      reg(box(w, 0.05, 0.11, M.mullion, x, y, z + 0.01), t0 + 0.02, t1 + 0.02, "fade", { opacity: 1 });
+    } else {
+      reg(box(0.05, h + 0.18, w + 0.18, M.mullion, x + 0.03, y, z), t0, t1, "fade", { opacity: 1 });
+      reg(box(0.08, h, w, M.glass, x, y, z), t0 + 0.01, t1 + 0.01, "fade", { opacity: 0.5 });
+      reg(box(0.11, h, 0.05, M.mullion, x - 0.01, y, z), t0 + 0.02, t1 + 0.02, "fade", { opacity: 1 });
+      reg(box(0.11, 0.05, w, M.mullion, x - 0.01, y, z), t0 + 0.02, t1 + 0.02, "fade", { opacity: 1 });
+    }
+  }
+  addWin(3.4, 2.2, 1.4, SLAB_TOP + 1.4, frontZ, "front", 0.70, 0.80);
+  addWin(1.6, 2.2, -1.7, SLAB_TOP + 1.4, frontZ, "front", 0.71, 0.81);
+  addWin(1.4, 1.6, -1.9, SLAB_TOP + GF_H + 1.5, frontZ - 0.3, "front", 0.74, 0.84);
+  addWin(1.4, 1.6, 0.5, SLAB_TOP + GF_H + 1.5, frontZ - 0.3, "front", 0.75, 0.85);
+  addWin(1.4, 1.6, 2.7, SLAB_TOP + GF_H + 1.5, frontZ - 0.3, "front", 0.76, 0.86);
+  addWin(3.2, 2.0, sideX, SLAB_TOP + 1.4, -0.6, "side", 0.74, 0.84);
+  addWin(3.0, 1.5, sideX - 0.05, SLAB_TOP + GF_H + 1.4, -0.9, "side", 0.78, 0.88);
   // entry door
-  reg(box(1.0, 2.3, 0.12, M.door, -0.3, SLAB_TOP + 1.15, frontZ + 0.02), 0.72, 0.8, "fade", { opacity: 1 });
-  // upper-floor front windows
-  reg(box(1.4, 1.5, 0.08, M.glass, -1.9, SLAB_TOP + GF_H + 1.5, frontZ - 0.3), 0.74, 0.84, "fade", { opacity: 0.6 });
-  reg(box(1.4, 1.5, 0.08, M.glass, 0.5, SLAB_TOP + GF_H + 1.5, frontZ - 0.3), 0.75, 0.85, "fade", { opacity: 0.6 });
-  reg(box(1.4, 1.5, 0.08, M.glass, 2.7, SLAB_TOP + GF_H + 1.5, frontZ - 0.3), 0.76, 0.86, "fade", { opacity: 0.6 });
-  // side glass
-  reg(box(0.08, 2.0, 3.2, M.glass, sideX, SLAB_TOP + 1.4, -0.6), 0.74, 0.84, "fade", { opacity: 0.55 });
-  reg(box(0.08, 1.4, 3.0, M.glass, sideX - 0.05, SLAB_TOP + GF_H + 1.4, -0.9), 0.78, 0.88, "fade", { opacity: 0.55 });
+  reg(box(1.0, 2.3, 0.14, M.door, -0.3, SLAB_TOP + 1.15, frontZ + 0.02), 0.72, 0.8, "fade", { opacity: 1 });
   // garage door
   reg(box(2.8, 2.1, 0.1, M.trim, -3.4, SLAB_TOP + 1.05, 4.0 + 2.3 + 0.02), 0.72, 0.82, "fade", { opacity: 1 });
+
+  /* ---- balcony railing + rooftop unit (detail) ---- */
+  var ry = SLAB_TOP + GF_H + 0.15;
+  reg(box(8.4, 0.85, 0.03, M.glass, 0.2, ry + 0.45, 3.42), 0.67, 0.76, "fade", { opacity: 0.4 });
+  reg(box(8.6, 0.08, 0.08, M.mullion, 0.2, ry + 0.9, 3.42), 0.66, 0.74, "fade", { opacity: 1 });
+  for (var rp = -3.6; rp <= 4; rp += 1.2) reg(box(0.06, 0.9, 0.06, M.mullion, rp, ry, 3.42), 0.66, 0.74, "fade", { opacity: 1 });
+  reg(box(1.7, 0.7, 1.3, M.trim, 1.6, SLAB_TOP + GF_H + UF_H + 0.55, -1.6), 0.68, 0.77, "drop", {});
 
   /* ---- 06 landscaping ---- */
   // driveway
@@ -220,19 +267,29 @@
     var cop = clamp((p - 0.16) / 0.1, 0, 1) * clamp(1 - (p - 0.62) / 0.1, 0, 1);
     crane.visible = cop > 0.01;
     crane.traverse(function (o) { if (o.isMesh) o.material.opacity = cop; });
+    // blueprint grid fades as the slab is poured
+    var go = clamp(1 - (p - 0.04) / 0.16, 0, 1) * 0.9;
+    grid.material.opacity = go; grid.visible = go > 0.01;
     // golden hour + warm window lights toward the end
-    var e2 = clamp((p - 0.86) / 0.14, 0, 1);
+    var e2 = clamp((p - 0.84) / 0.16, 0, 1);
     sun.position.set(lerp(9, 3.5, e2), lerp(15, 5.5, e2), lerp(7, 9, e2));
     sun.color.setHSL(lerp(0.12, 0.07, e2), 0.55, lerp(0.92, 0.72, e2));
-    hemi.intensity = lerp(0.62, 0.42, e2);
+    sun.intensity = lerp(1.15, 0.9, e2);
+    hemi.intensity = lerp(0.62, 0.4, e2);
     for (var g = 0; g < glassMeshes.length; g++) {
       glassMeshes[g].material.emissive.setHex(0xffb457);
-      glassMeshes[g].material.emissiveIntensity = e2 * 1.15;
+      glassMeshes[g].material.emissiveIntensity = e2 * 1.2;
     }
-    renderer.toneMappingExposure = lerp(1.05, 1.18, e2);
+    // dusk backdrop + stars
+    stars.material.opacity = e2 * 0.9; stars.visible = e2 > 0.02;
+    var wantDusk = e2 > 0.45;
+    if (wantDusk !== duskOn) { duskOn = wantDusk; scene.background = duskOn ? skyDusk : skyDay; scene.environment = duskOn ? skyDusk : skyDay; }
+    scene.fog.color.setHex(duskOn ? 0x3a3350 : 0xcfdae0);
+    renderer.toneMappingExposure = lerp(1.06, 1.16, e2);
     setCamera(p);
     renderer.render(scene, camera);
   }
+  var duskOn = false;
 
   function resize() {
     var w = canvas.clientWidth || canvas.offsetWidth, h = canvas.clientHeight || canvas.offsetHeight;
