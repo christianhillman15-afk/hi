@@ -1,7 +1,10 @@
 /* =============================================================
-   DK3 — 3D scroll-built house (Three.js)
+   DK3 — 3D scroll-built house (Three.js), detailed edition
    A real 3D model that constructs itself as you scroll:
-   slab → framing → walls → roof → glass → landscaping → lights.
+   survey grid → excavation → slab → framing (crane, scaffold,
+   materials) → walls (stucco + wood + stone) → roof → glass,
+   entry, balcony → South-Florida landscaping (palms, pool, car)
+   → golden-hour dusk with warm window + path lights.
    Exposes window.__dk3SetBuild(progress 0..1); driven by main.js.
    ============================================================= */
 (function () {
@@ -10,61 +13,78 @@
   var canvas = document.getElementById("build-canvas");
   if (!canvas) return;
 
-  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var THREE = window.THREE;
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var clamp = function (v, a, b) { return Math.max(a, Math.min(b, v)); };
   var lerp = function (a, b, t) { return a + (b - a) * t; };
   var easeOut = function (x) { return 1 - Math.pow(1 - x, 3); };
   var easeInOut = function (x) { return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
+  var rand = Math.random;
 
   var renderer;
-  try {
-    renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
-  } catch (e) { return; }
+  try { renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true }); }
+  catch (e) { return; }
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   if (THREE.SRGBColorSpace) renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
+  renderer.toneMappingExposure = 1.06;
 
   var scene = new THREE.Scene();
-  var camera = new THREE.PerspectiveCamera(42, 1, 0.1, 200);
+  var camera = new THREE.PerspectiveCamera(40, 1, 0.1, 260);
 
   /* ---- lights ---- */
-  var hemi = new THREE.HemisphereLight(0xbcd6ef, 0x4a5236, 0.62);
-  scene.add(hemi);
-  var sun = new THREE.DirectionalLight(0xfff1d6, 1.15);
-  sun.position.set(9, 15, 7);
-  sun.castShadow = true;
+  var hemi = new THREE.HemisphereLight(0xbcd6ef, 0x51603c, 0.6); scene.add(hemi);
+  var sun = new THREE.DirectionalLight(0xfff1d6, 1.2);
+  sun.position.set(10, 16, 8); sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
-  sun.shadow.camera.near = 1; sun.shadow.camera.far = 80;
-  sun.shadow.camera.left = -22; sun.shadow.camera.right = 22;
-  sun.shadow.camera.top = 22; sun.shadow.camera.bottom = -22;
-  sun.shadow.bias = -0.0004;
+  sun.shadow.camera.near = 1; sun.shadow.camera.far = 90;
+  sun.shadow.camera.left = -20; sun.shadow.camera.right = 20;
+  sun.shadow.camera.top = 20; sun.shadow.camera.bottom = -20;
+  sun.shadow.bias = -0.00035; sun.shadow.normalBias = 0.02;
   scene.add(sun);
-  var fill = new THREE.DirectionalLight(0xa9c4e0, 0.25);
-  fill.position.set(-8, 6, -6);
-  scene.add(fill);
+  var fill = new THREE.DirectionalLight(0xa0c6e2 & 0xffffff, 0.22); fill.position.set(-9, 6, -7); scene.add(fill);
 
-  /* ---- sky gradient (background + reflections) & fog ---- */
+  /* ---- textures (procedural, self-contained) ---- */
+  function cvtex(draw, rep) {
+    var cv = document.createElement("canvas"); cv.width = cv.height = 128;
+    draw(cv.getContext("2d"), 128);
+    var t = new THREE.CanvasTexture(cv); t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    if (rep) t.repeat.set(rep, rep);
+    if (THREE.SRGBColorSpace) t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  }
+  var grassTex = cvtex(function (g, s) {
+    g.fillStyle = "#54713c"; g.fillRect(0, 0, s, s);
+    for (var i = 0; i < 3000; i++) { g.fillStyle = "rgba(30,54,20," + (rand() * 0.14 + 0.03).toFixed(3) + ")"; g.fillRect(rand() * s, rand() * s, rand() * 2 + 0.5, rand() * 2 + 0.5); }
+    for (var j = 0; j < 900; j++) { g.fillStyle = "rgba(150,175,90," + (rand() * 0.10).toFixed(3) + ")"; g.fillRect(rand() * s, rand() * s, 1, 1); }
+  }, 26);
+  var paverTex = cvtex(function (g, s) {
+    g.fillStyle = "#8f8a80"; g.fillRect(0, 0, s, s);
+    g.strokeStyle = "rgba(20,20,20,0.22)"; g.lineWidth = 1.5;
+    for (var i = 0; i <= s; i += 21) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i, s); g.stroke(); g.beginPath(); g.moveTo(0, i); g.lineTo(s, i); g.stroke(); }
+  }, 4);
+  var stuccoRough = cvtex(function (g, s) {
+    g.fillStyle = "#808080"; g.fillRect(0, 0, s, s);
+    for (var i = 0; i < 5000; i++) { var v = 90 + rand() * 90 | 0; g.fillStyle = "rgb(" + v + "," + v + "," + v + ")"; g.fillRect(rand() * s, rand() * s, 1, 1); }
+  }, 3);
+
+  /* ---- sky + fog + stars ---- */
   function skyTex(a, b, c) {
     var cv = document.createElement("canvas"); cv.width = 16; cv.height = 256;
     var g = cv.getContext("2d"); var gr = g.createLinearGradient(0, 0, 0, 256);
     gr.addColorStop(0, a); gr.addColorStop(0.55, b); gr.addColorStop(1, c);
     g.fillStyle = gr; g.fillRect(0, 0, 16, 256);
     var t = new THREE.CanvasTexture(cv); t.mapping = THREE.EquirectangularReflectionMapping;
-    if (THREE.SRGBColorSpace) t.colorSpace = THREE.SRGBColorSpace;
-    return t;
+    if (THREE.SRGBColorSpace) t.colorSpace = THREE.SRGBColorSpace; return t;
   }
-  var skyDay = skyTex("#a9c9e8", "#d6e6f1", "#eee6d6");
-  var skyDusk = skyTex("#1b2947", "#5b4a66", "#eaa25c");
+  var skyDay = skyTex("#a6c8e8", "#d6e6f1", "#efe7d6");
+  var skyDusk = skyTex("#141f3c", "#4c3f63", "#f0a457");
   scene.background = skyDay; scene.environment = skyDay;
-  scene.fog = new THREE.Fog(0xcfdae0, 48, 125);
-
-  // faint stars for the dusk finish
+  scene.fog = new THREE.Fog(0xcfdae0, 50, 135);
   var starPos = [];
-  for (var st = 0; st < 140; st++) starPos.push((Math.random() - 0.5) * 180, 34 + Math.random() * 55, -55 - Math.random() * 55);
+  for (var st = 0; st < 150; st++) starPos.push((rand() - 0.5) * 200, 34 + rand() * 60, -60 - rand() * 60);
   var starGeo = new THREE.BufferGeometry();
   starGeo.setAttribute("position", new THREE.Float32BufferAttribute(starPos, 3));
   var stars = new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xfff3d0, size: 0.5, transparent: true, opacity: 0, depthWrite: false }));
@@ -72,97 +92,172 @@
 
   /* ---- materials ---- */
   var M = {
-    slab:   new THREE.MeshStandardMaterial({ color: 0x9c968b, roughness: 0.95 }),
+    slab:   new THREE.MeshStandardMaterial({ color: 0x9c968b, roughness: 0.96 }),
     dirt:   new THREE.MeshStandardMaterial({ color: 0x8a6f4e, roughness: 1 }),
-    grass:  new THREE.MeshStandardMaterial({ color: 0x54713c, roughness: 1 }),
-    frame:  new THREE.MeshStandardMaterial({ color: 0xba7f38, roughness: 0.7, metalness: 0.1 }),
-    wall:   new THREE.MeshStandardMaterial({ color: 0xefe9df, roughness: 0.85 }),
-    wall2:  new THREE.MeshStandardMaterial({ color: 0xd8d0c2, roughness: 0.85 }),
-    roof:   new THREE.MeshStandardMaterial({ color: 0x2c333c, roughness: 0.6, metalness: 0.2 }),
-    trim:   new THREE.MeshStandardMaterial({ color: 0x3b424b, roughness: 0.6 }),
-    glass:  new THREE.MeshStandardMaterial({ color: 0x9fc0d8, roughness: 0.05, metalness: 0.5, transparent: true, opacity: 0.5, emissive: 0x000000, envMapIntensity: 1.5 }),
-    mullion:new THREE.MeshStandardMaterial({ color: 0x2a2e35, roughness: 0.5, metalness: 0.4 }),
-    door:   new THREE.MeshStandardMaterial({ color: 0x6a4a2c, roughness: 0.6 }),
-    garage: new THREE.MeshStandardMaterial({ color: 0xcfc9bd, roughness: 0.8 }),
-    drive:  new THREE.MeshStandardMaterial({ color: 0x8f8b82, roughness: 1 }),
-    pool:   new THREE.MeshStandardMaterial({ color: 0x2f9fc4, roughness: 0.1, metalness: 0.3, transparent: true, opacity: 0.85, emissive: 0x06344a, emissiveIntensity: 0.15 }),
-    trunk:  new THREE.MeshStandardMaterial({ color: 0x6d4a2b, roughness: 1 }),
-    leaf:   new THREE.MeshStandardMaterial({ color: 0x3c6a33, roughness: 1 })
+    grass:  new THREE.MeshStandardMaterial({ map: grassTex, roughness: 1 }),
+    frame:  new THREE.MeshStandardMaterial({ color: 0xba7f38, roughness: 0.72, metalness: 0.08 }),
+    steel:  new THREE.MeshStandardMaterial({ color: 0x8b939b, roughness: 0.5, metalness: 0.6 }),
+    wall:   new THREE.MeshStandardMaterial({ color: 0xefe9df, roughness: 0.92, roughnessMap: stuccoRough }),
+    wall2:  new THREE.MeshStandardMaterial({ color: 0xdcd5c8, roughness: 0.92, roughnessMap: stuccoRough }),
+    wood:   new THREE.MeshStandardMaterial({ color: 0x9c6b34, roughness: 0.6, metalness: 0.05 }),
+    stone:  new THREE.MeshStandardMaterial({ color: 0xcdbfa3, roughness: 0.85 }),
+    roof:   new THREE.MeshStandardMaterial({ color: 0x2b323a, roughness: 0.6, metalness: 0.25 }),
+    fascia: new THREE.MeshStandardMaterial({ color: 0x20262d, roughness: 0.5 }),
+    glass:  new THREE.MeshStandardMaterial({ color: 0x9fc0d8, roughness: 0.05, metalness: 0.5, transparent: true, opacity: 0.5, emissive: 0x000000, envMapIntensity: 1.6 }),
+    mullion:new THREE.MeshStandardMaterial({ color: 0x272b31, roughness: 0.5, metalness: 0.4 }),
+    door:   new THREE.MeshStandardMaterial({ color: 0x5c3f24, roughness: 0.5 }),
+    garage: new THREE.MeshStandardMaterial({ color: 0xd0cabe, roughness: 0.8 }),
+    drive:  new THREE.MeshStandardMaterial({ map: paverTex, roughness: 1 }),
+    pool:   new THREE.MeshStandardMaterial({ color: 0x2f9fc4, roughness: 0.08, metalness: 0.35, transparent: true, opacity: 0.86, emissive: 0x06344a, emissiveIntensity: 0.15 }),
+    coping: new THREE.MeshStandardMaterial({ color: 0xe6ded0, roughness: 0.8 }),
+    trunk:  new THREE.MeshStandardMaterial({ color: 0x7a5a34, roughness: 1 }),
+    palm:   new THREE.MeshStandardMaterial({ color: 0x9a7b45, roughness: 1 }),
+    frond:  new THREE.MeshStandardMaterial({ color: 0x3f7a3a, roughness: 1 }),
+    leaf:   new THREE.MeshStandardMaterial({ color: 0x3c6a33, roughness: 1 }),
+    hedge:  new THREE.MeshStandardMaterial({ color: 0x35592c, roughness: 1 }),
+    yellow: new THREE.MeshStandardMaterial({ color: 0xe0a021, roughness: 0.55, metalness: 0.2 }),
+    dark:   new THREE.MeshStandardMaterial({ color: 0x2a2e33, roughness: 0.6, metalness: 0.3 }),
+    cone:   new THREE.MeshStandardMaterial({ color: 0xe4611f, roughness: 0.8 }),
+    car:    new THREE.MeshStandardMaterial({ color: 0x30363d, roughness: 0.35, metalness: 0.5 }),
+    lightGlow: new THREE.MeshStandardMaterial({ color: 0xffca7a, emissive: 0xffb457, emissiveIntensity: 0, roughness: 0.4 })
   };
 
-  var parts = [];
+  var parts = [], glassMeshes = [], frameParts = [], temps = [], lights = [];
   function reg(mesh, t0, t1, mode, opt) {
     opt = opt || {};
     mesh.userData = { t0: t0, t1: t1, mode: mode, opt: opt };
-    mesh.castShadow = (mode !== "fade");
-    mesh.receiveShadow = true;
+    mesh.castShadow = (mode !== "fade" && opt.noshadow !== true);
+    mesh.receiveShadow = opt.noshadow !== true;
     if (mode === "growY") mesh.scale.y = 0.0001;
     if (mode === "scale") { mesh.userData.fs = mesh.scale.clone(); mesh.scale.setScalar(0.0001); }
     if (mode === "drop") { mesh.userData.fy = mesh.position.y; }
     if (mode === "fade") { mesh.material.transparent = true; mesh.userData.op = (opt.opacity != null ? opt.opacity : mesh.material.opacity); mesh.material.opacity = 0; }
     parts.push(mesh); scene.add(mesh); return mesh;
   }
-  var glassMeshes = [], frameParts = [];
-  // box whose origin is at its bottom (so growY scales upward from the ground)
-  function boxB(w, h, d, mat, x, y, z) {
-    var g = new THREE.BoxGeometry(w, h, d); g.translate(0, h / 2, 0);
-    var m = new THREE.Mesh(g, mat.clone()); m.position.set(x, y, z); return m;
-  }
-  function box(w, h, d, mat, x, y, z) {
-    var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat.clone()); m.position.set(x, y, z); return m;
+  function boxB(w, h, d, mat, x, y, z) { var g = new THREE.BoxGeometry(w, h, d); g.translate(0, h / 2, 0); var m = new THREE.Mesh(g, mat.clone()); m.position.set(x, y, z); return m; }
+  function box(w, h, d, mat, x, y, z) { var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat.clone()); m.position.set(x, y, z); return m; }
+  function cyl(rt, rb, h, mat, x, y, z, seg) { var m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg || 10), mat.clone()); m.position.set(x, y, z); return m; }
+  // temporary construction equipment: fade in [i0,i1], fade out [o0,o1]
+  function temp(group, i0, i1, o0, o1) {
+    group.traverse(function (o) { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.material = o.material.clone(); o.material.transparent = true; o.material.opacity = 0; } });
+    group.userData = { i0: i0, i1: i1, o0: o0, o1: o1 };
+    temps.push(group); scene.add(group); return group;
   }
 
-  /* ---- ground (always visible) ---- */
-  var ground = new THREE.Mesh(new THREE.PlaneGeometry(120, 120), M.grass);
+  /* ---- ground + survey grid ---- */
+  var ground = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), M.grass);
   ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
-  // dirt building pad
-  reg(new THREE.Mesh(new THREE.PlaneGeometry(15, 12), M.dirt), 0.0, 0.06, "fade", { opacity: 1 })
-    .rotation.x = -Math.PI / 2;
-  parts[parts.length - 1].position.y = 0.02;
-
-  // blueprint site grid — drawn first, fades out as the slab is poured
+  var pad = reg(new THREE.Mesh(new THREE.PlaneGeometry(15, 12), M.dirt), 0.0, 0.05, "fade", { opacity: 1, noshadow: true });
+  pad.rotation.x = -Math.PI / 2; pad.position.y = 0.02;
+  // soft contact shadow under the house
+  var contact = new THREE.Mesh(new THREE.CircleGeometry(9, 32), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.0 }));
+  contact.rotation.x = -Math.PI / 2; contact.position.y = 0.03; scene.add(contact);
   var grid = new THREE.GridHelper(15, 15, 0x74d4e2, 0x2f7f8c);
-  grid.position.y = 0.05; grid.material.transparent = true; grid.material.opacity = 0.9;
-  scene.add(grid);
+  grid.position.y = 0.05; grid.material.transparent = true; grid.material.opacity = 0.9; scene.add(grid);
 
-  var SLAB_TOP = 0.5;
-  /* ---- 01 foundation slab ---- */
+  var SLAB_TOP = 0.5, GF_H = 3.1, UF_H = 2.9;
+
+  /* ---- excavation: dirt mounds (temp) ---- */
+  var digG = new THREE.Group();
+  for (var d0 = 0; d0 < 5; d0++) { var mound = cyl(0, 0.9 + rand() * 0.5, 0.7, M.dirt, -6 + d0 * 3, 0.35, 6 + (d0 % 2) * 1.2, 7); digG.add(mound); }
+  temp(digG, 0.02, 0.06, 0.14, 0.2);
+
+  /* ---- 01 foundation slab + footings ---- */
   reg(boxB(10, SLAB_TOP, 8, M.slab, 0, 0, 0), 0.06, 0.16, "growY");
+  reg(box(9.4, 0.12, 7.4, M.dark, 0, SLAB_TOP + 0.02, 0), 0.12, 0.18, "fade", { opacity: 1, noshadow: true }); // rebar/grade line hint
 
-  /* ---- 02 framing: columns + beams (later enclosed by the walls) ---- */
+  /* ---- 02 framing ---- */
   function regFrame(m, t0, t1, mode) { reg(m, t0, t1, mode); m.material.transparent = true; frameParts.push(m); return m; }
   var colXs = [-4.6, -1.5, 1.5, 4.6], colZs = [-3.6, 0, 3.6], FH = 6.2;
-  for (var ix = 0; ix < colXs.length; ix++) for (var iz = 0; iz < colZs.length; iz++) {
-    regFrame(boxB(0.18, FH, 0.18, M.frame, colXs[ix], SLAB_TOP, colZs[iz]), 0.16 + 0.02 * ix, 0.30 + 0.02 * ix, "growY");
-  }
+  for (var ix = 0; ix < colXs.length; ix++) for (var iz = 0; iz < colZs.length; iz++)
+    regFrame(boxB(0.18, FH, 0.18, M.frame, colXs[ix], SLAB_TOP, colZs[iz]), 0.16 + 0.015 * ix, 0.30 + 0.015 * ix, "growY");
   function ring(y, t0) {
-    regFrame(box(9.4, 0.16, 0.16, M.frame, 0, y, 3.6), t0, t0 + 0.06, "fade");
-    regFrame(box(9.4, 0.16, 0.16, M.frame, 0, y, -3.6), t0, t0 + 0.06, "fade");
-    regFrame(box(0.16, 0.16, 7.4, M.frame, 4.6, y, 0), t0, t0 + 0.06, "fade");
-    regFrame(box(0.16, 0.16, 7.4, M.frame, -4.6, y, 0), t0, t0 + 0.06, "fade");
+    regFrame(box(9.4, 0.16, 0.16, M.frame, 0, y, 3.6), t0, t0 + 0.05, "fade");
+    regFrame(box(9.4, 0.16, 0.16, M.frame, 0, y, -3.6), t0, t0 + 0.05, "fade");
+    regFrame(box(0.16, 0.16, 7.4, M.frame, 4.6, y, 0), t0, t0 + 0.05, "fade");
+    regFrame(box(0.16, 0.16, 7.4, M.frame, -4.6, y, 0), t0, t0 + 0.05, "fade");
   }
-  ring(SLAB_TOP + 3.1, 0.26);
-  ring(SLAB_TOP + FH, 0.34);
-  // mid floor deck (stays, hidden inside walls)
-  reg(box(9, 0.18, 7, M.slab, 0, SLAB_TOP + 3.1, 0), 0.30, 0.38, "fade", { opacity: 1 });
+  ring(SLAB_TOP + 3.1, 0.24); ring(SLAB_TOP + FH, 0.32);
+  // joists across mid level
+  for (var jz = -3.2; jz <= 3.2; jz += 0.9) regFrame(box(9, 0.1, 0.1, M.frame, 0, SLAB_TOP + 3.05, jz), 0.30, 0.36, "fade");
+  reg(box(9, 0.16, 7, M.slab, 0, SLAB_TOP + 3.1, 0), 0.32, 0.4, "fade", { opacity: 1 });
 
-  /* ---- 03 walls (grow up, enclosing the frame) ---- */
-  var GF_H = 3.1, UF_H = 2.9;
-  reg(boxB(9, GF_H, 7, M.wall, 0, SLAB_TOP, 0), 0.40, 0.52, "growY");            // ground floor
-  reg(boxB(8, UF_H, 6, M.wall2, 0.4, SLAB_TOP + GF_H, -0.3), 0.50, 0.62, "growY"); // upper floor (inset)
+  /* ---- scaffolding + material stacks + cones + fence (temp) ---- */
+  var scaffG = new THREE.Group();
+  for (var sx = -4.5; sx <= 4.5; sx += 3) { // uprights front
+    scaffG.add(box(0.08, 6.2, 0.08, M.steel, sx, SLAB_TOP + 3.1, 4.4));
+    scaffG.add(box(0.08, 6.2, 0.08, M.steel, sx, SLAB_TOP + 3.1, -4.4));
+  }
+  for (var sy2 = 1.8; sy2 <= 6; sy2 += 2) { // horizontal rails + planks front
+    scaffG.add(box(9.3, 0.07, 0.07, M.steel, 0, sy2, 4.4));
+    scaffG.add(box(9.3, 0.12, 0.5, M.frame, 0, sy2 + 0.1, 4.4));
+    scaffG.add(box(9.3, 0.07, 0.07, M.steel, 0, sy2, -4.4));
+  }
+  temp(scaffG, 0.2, 0.28, 0.6, 0.68);
 
-  /* ---- garage wing ---- */
+  var matG = new THREE.Group();
+  for (var lp = 0; lp < 4; lp++) matG.add(box(2.4, 0.18, 1.1, M.frame, 7.4, 0.1 + lp * 0.2, 5.5)); // lumber stack
+  matG.add(box(1.6, 1.0, 1.2, M.dark, 7.6, 0.5, 3.4)); // materials crate
+  temp(matG, 0.16, 0.24, 0.62, 0.7);
+
+  var siteG = new THREE.Group();
+  function cone(x, z) { var c = cyl(0.02, 0.28, 0.55, M.cone, x, 0.28, z, 8); siteG.add(c); var b = box(0.5, 0.06, 0.5, M.dark, x, 0.03, z); siteG.add(b); }
+  cone(-6.5, 7.5); cone(6.5, 8); cone(-8, 3); cone(8.2, -1);
+  // perimeter site fence (posts + mesh panels)
+  for (var fx = -9; fx <= 9; fx += 3) { siteG.add(box(0.08, 1.6, 0.08, M.steel, fx, 0.8, 9)); }
+  siteG.add(box(18, 1.4, 0.04, new THREE.MeshStandardMaterial({ color: 0xc9cdd2, transparent: true, opacity: 0.22 }), 0, 0.85, 9));
+  temp(siteG, 0.02, 0.08, 0.74, 0.82);
+
+  /* ---- crane (improved) ---- */
+  var crane = new THREE.Group();
+  crane.add(box(0.9, 0.35, 0.9, M.yellow, 0, 0.2, 0)); // base
+  crane.add(box(0.32, 13, 0.32, M.yellow, 0, 6.7, 0)); // mast
+  crane.add(box(11, 0.32, 0.34, M.yellow, 2.4, 12.7, 0)); // jib
+  crane.add(box(2.4, 0.3, 0.34, M.dark, -2.6, 12.7, 0)); // counter-jib
+  crane.add(box(1.1, 0.7, 0.7, M.dark, -3.2, 12.7, 0)); // counterweight
+  crane.add(box(0.7, 0.7, 0.8, M.dark, 0, 12.0, 0)); // operator cab
+  crane.add(box(0.06, 2.4, 0.06, M.steel, 6.6, 11.5, 0)); // hook cable
+  crane.add(box(0.5, 0.4, 0.5, M.dark, 6.6, 10.2, 0)); // hook block
+  crane.position.set(8.8, 0, -4.8);
+  temp(crane, 0.16, 0.26, 0.62, 0.72);
+
+  /* ---- excavator (temp, during sitework) ---- */
+  var exG = new THREE.Group();
+  exG.add(box(2.6, 0.5, 1.5, M.dark, 0, 0.55, 0)); // tracks base
+  exG.add(box(2.4, 0.4, 0.5, M.dark, 0, 0.35, 0.62)); exG.add(box(2.4, 0.4, 0.5, M.dark, 0, 0.35, -0.62)); // tracks
+  exG.add(box(1.7, 0.9, 1.3, M.yellow, -0.2, 1.25, 0)); // cab body
+  exG.add(box(0.9, 0.8, 1.0, M.glass, 0.5, 1.35, 0)); // cab glass
+  var boom = box(2.2, 0.28, 0.28, M.yellow, 1.6, 1.5, 0); boom.rotation.z = -0.5; exG.add(boom);
+  var arm = box(1.8, 0.24, 0.24, M.yellow, 3.0, 0.8, 0); arm.rotation.z = 0.5; exG.add(arm);
+  exG.add(box(0.5, 0.5, 0.7, M.steel, 3.7, 0.15, 0)); // bucket
+  exG.position.set(-5.5, 0, 5.5); exG.rotation.y = -0.7; exG.scale.setScalar(0.9);
+  temp(exG, 0.03, 0.08, 0.13, 0.19);
+
+  /* ---- 03 walls (+ wood accent + stone base) ---- */
+  reg(boxB(9, GF_H, 7, M.wall, 0, SLAB_TOP, 0), 0.40, 0.52, "growY");
+  reg(boxB(8, UF_H, 6, M.wall2, 0.4, SLAB_TOP + GF_H, -0.3), 0.50, 0.62, "growY");
+  // stone base course
+  reg(boxB(9.08, 0.9, 7.08, M.stone, 0, SLAB_TOP, 0), 0.42, 0.5, "growY");
+  // vertical wood-slat accent beside the entry (front)
+  reg(boxB(1.5, GF_H + UF_H, 0.2, M.wood, -1.15, SLAB_TOP, 3.56), 0.52, 0.62, "growY");
+  // garage wing
   reg(boxB(3.6, 2.7, 4.6, M.garage, -3.4, SLAB_TOP, 4.0), 0.44, 0.56, "growY");
+  reg(boxB(3.68, 0.7, 4.68, M.stone, -3.4, SLAB_TOP, 4.0), 0.44, 0.52, "growY");
 
-  /* ---- 04 roof ---- */
-  reg(box(8.6, 0.5, 6.6, M.roof, 0.4, SLAB_TOP + GF_H + UF_H + 0.25, -0.3), 0.60, 0.70, "drop", { });
-  reg(box(4.0, 0.35, 5.0, M.roof, -3.4, SLAB_TOP + 2.7 + 0.18, 4.0), 0.58, 0.68, "drop", {});
-  // ground-floor roof ledge over the setback
-  reg(box(9.2, 0.35, 7.2, M.trim, 0, SLAB_TOP + GF_H + 0.05, 0), 0.56, 0.66, "drop", {});
+  /* ---- 04 roof + parapet + fascia ---- */
+  var roofY = SLAB_TOP + GF_H + UF_H;
+  reg(box(8.6, 0.5, 6.6, M.roof, 0.4, roofY + 0.25, -0.3), 0.60, 0.70, "drop", {});
+  reg(box(8.9, 0.35, 0.18, M.fascia, 0.4, roofY + 0.55, -0.3 + 3.3), 0.62, 0.7, "drop", {}); // front parapet
+  reg(box(8.9, 0.35, 0.18, M.fascia, 0.4, roofY + 0.55, -0.3 - 3.3), 0.62, 0.7, "drop", {});
+  reg(box(0.18, 0.35, 6.7, M.fascia, 0.4 + 4.35, roofY + 0.55, -0.3), 0.62, 0.7, "drop", {});
+  reg(box(0.18, 0.35, 6.7, M.fascia, 0.4 - 4.35, roofY + 0.55, -0.3), 0.62, 0.7, "drop", {});
+  // ground-floor flat roof / terrace deck over the setback
+  reg(box(9.2, 0.35, 7.2, M.fascia, 0, SLAB_TOP + GF_H + 0.05, 0), 0.56, 0.66, "drop", {});
+  reg(box(1.75, 0.35, 4.7, M.roof, -3.4, SLAB_TOP + 2.7 + 0.18, 4.0), 0.58, 0.68, "drop", {}); // garage roof
+  reg(box(1.7, 0.7, 1.3, M.dark, 1.6, roofY + 0.6, -1.6), 0.68, 0.77, "drop", {}); // rooftop HVAC
 
   /* ---- 05 framed glass + doors ---- */
-  var frontZ = 3.55, sideX = 4.55;
-  // framed window: dark surround + glass + mullion bars
+  var frontZ = 3.56, sideX = 4.55;
   function addWin(w, h, x, y, z, face, t0, t1) {
     if (face === "front") {
       reg(box(w + 0.18, h + 0.18, 0.05, M.mullion, x, y, z - 0.03), t0, t1, "fade", { opacity: 1 });
@@ -176,64 +271,84 @@
       reg(box(0.11, 0.05, w, M.mullion, x - 0.01, y, z), t0 + 0.02, t1 + 0.02, "fade", { opacity: 1 });
     }
   }
-  addWin(3.4, 2.2, 1.4, SLAB_TOP + 1.4, frontZ, "front", 0.70, 0.80);
-  addWin(1.6, 2.2, -1.7, SLAB_TOP + 1.4, frontZ, "front", 0.71, 0.81);
+  addWin(3.2, 2.2, 1.5, SLAB_TOP + 1.4, frontZ, "front", 0.70, 0.80);
+  addWin(1.3, 2.2, -2.0, SLAB_TOP + 1.4, frontZ, "front", 0.71, 0.81);
   addWin(1.4, 1.6, -1.9, SLAB_TOP + GF_H + 1.5, frontZ - 0.3, "front", 0.74, 0.84);
   addWin(1.4, 1.6, 0.5, SLAB_TOP + GF_H + 1.5, frontZ - 0.3, "front", 0.75, 0.85);
   addWin(1.4, 1.6, 2.7, SLAB_TOP + GF_H + 1.5, frontZ - 0.3, "front", 0.76, 0.86);
   addWin(3.2, 2.0, sideX, SLAB_TOP + 1.4, -0.6, "side", 0.74, 0.84);
   addWin(3.0, 1.5, sideX - 0.05, SLAB_TOP + GF_H + 1.4, -0.9, "side", 0.78, 0.88);
-  // entry door
-  reg(box(1.0, 2.3, 0.14, M.door, -0.3, SLAB_TOP + 1.15, frontZ + 0.02), 0.72, 0.8, "fade", { opacity: 1 });
-  // garage door
-  reg(box(2.8, 2.1, 0.1, M.trim, -3.4, SLAB_TOP + 1.05, 4.0 + 2.3 + 0.02), 0.72, 0.82, "fade", { opacity: 1 });
 
-  /* ---- balcony railing + rooftop unit (detail) ---- */
+  /* ---- entry: recessed door, canopy, steps, sidelight ---- */
+  reg(box(1.1, 2.4, 0.16, M.door, -0.3, SLAB_TOP + 1.2, frontZ - 0.05), 0.72, 0.8, "fade", { opacity: 1 });
+  reg(box(0.08, 2.0, 0.14, M.steel, -0.85, SLAB_TOP + 1.1, frontZ), 0.73, 0.81, "fade", { opacity: 1 }); // door handle post
+  reg(box(0.35, 2.3, 0.1, M.glass, 0.45, SLAB_TOP + 1.35, frontZ), 0.73, 0.82, "fade", { opacity: 0.5 }); // sidelight
+  reg(box(2.6, 0.16, 1.1, M.fascia, -0.3, SLAB_TOP + 2.5, frontZ + 0.5), 0.73, 0.82, "drop", {}); // canopy
+  reg(box(2.2, 0.16, 0.7, M.stone, -0.3, 0.16, frontZ + 0.9), 0.78, 0.86, "fade", { opacity: 1 }); // step 1
+  reg(box(1.7, 0.16, 0.5, M.stone, -0.3, 0.32, frontZ + 0.6), 0.79, 0.87, "fade", { opacity: 1 }); // step 2
+  // garage door with slats
+  reg(box(2.8, 2.1, 0.1, M.mullion, -3.4, SLAB_TOP + 1.05, 4.0 + 2.3 + 0.02), 0.72, 0.82, "fade", { opacity: 1 });
+  for (var gs = 0; gs < 5; gs++) reg(box(2.7, 0.05, 0.12, M.dark, -3.4, SLAB_TOP + 0.35 + gs * 0.42, 4.0 + 2.3 + 0.04), 0.73, 0.83, "fade", { opacity: 1 });
+
+  /* ---- balcony railing (glass + posts) ---- */
   var ry = SLAB_TOP + GF_H + 0.15;
-  reg(box(8.4, 0.85, 0.03, M.glass, 0.2, ry + 0.45, 3.42), 0.67, 0.76, "fade", { opacity: 0.4 });
-  reg(box(8.6, 0.08, 0.08, M.mullion, 0.2, ry + 0.9, 3.42), 0.66, 0.74, "fade", { opacity: 1 });
-  for (var rp = -3.6; rp <= 4; rp += 1.2) reg(box(0.06, 0.9, 0.06, M.mullion, rp, ry, 3.42), 0.66, 0.74, "fade", { opacity: 1 });
-  reg(box(1.7, 0.7, 1.3, M.trim, 1.6, SLAB_TOP + GF_H + UF_H + 0.55, -1.6), 0.68, 0.77, "drop", {});
+  reg(box(8.4, 0.85, 0.03, M.glass, 0.2, ry + 0.45, 3.42), 0.66, 0.75, "fade", { opacity: 0.4 });
+  reg(box(8.6, 0.08, 0.08, M.steel, 0.2, ry + 0.9, 3.42), 0.65, 0.73, "fade", { opacity: 1 });
+  for (var rp = -3.6; rp <= 4; rp += 1.2) reg(box(0.06, 0.9, 0.06, M.steel, rp, ry, 3.42), 0.65, 0.73, "fade", { opacity: 1 });
 
   /* ---- 06 landscaping ---- */
-  // driveway
-  reg(box(3.2, 0.06, 7.5, M.drive, -3.4, 0.04, 8.2), 0.80, 0.9, "fade", { opacity: 1 });
-  // walkway
-  reg(box(1.4, 0.06, 4.5, M.drive, -0.3, 0.05, 7.0), 0.82, 0.9, "fade", { opacity: 1 });
-  // pool
-  reg(box(6.2, 0.4, 3.4, M.pool, 3.0, 0.2, 7.2), 0.84, 0.94, "scale");
-  reg(box(7.2, 0.12, 4.4, M.slab, 3.0, 0.06, 7.2), 0.82, 0.9, "fade", { opacity: 1 });
-  // trees
+  reg(box(3.2, 0.06, 8, M.drive, -3.4, 0.045, 8.6), 0.80, 0.9, "fade", { opacity: 1, noshadow: true }); // driveway
+  reg(box(1.5, 0.06, 4.6, M.drive, -0.3, 0.05, 7.2, 0), 0.82, 0.9, "fade", { opacity: 1, noshadow: true }); // walkway
+  // pool + coping + deck + spa
+  reg(box(7.6, 0.14, 4.6, M.coping, 3.2, 0.07, 7.4), 0.82, 0.9, "fade", { opacity: 1, noshadow: true }); // deck
+  reg(box(6.4, 0.5, 3.5, M.pool, 3.2, 0.28, 7.4), 0.84, 0.94, "scale"); // water
+  reg(box(1.4, 0.55, 1.4, M.pool, 6.2, 0.3, 5.6), 0.85, 0.94, "scale"); // spa
+  function lounger(x, z) { var g = new THREE.Group(); g.add(box(1.7, 0.12, 0.7, M.coping, 0, 0.35, 0)); var bk = box(0.7, 0.12, 0.7, M.coping, 0.6, 0.55, 0); bk.rotation.z = -0.6; g.add(bk); g.position.set(x, 0, z); return reg(g, 0.86, 0.94, "scale"); }
+  lounger(0.6, 8.4); lounger(1.7, 8.4);
+  // hedges along the facade
+  for (var hb = -4; hb <= 4; hb += 1.15) reg(box(1.0, 0.7, 0.7, M.hedge, hb, 0.35, frontZ + 0.95), 0.84 + Math.abs(hb) * 0.004, 0.93, "scale");
+  // front low hedge (property edge)
+  reg(box(13, 0.7, 0.6, M.hedge, 0, 0.35, 9.2), 0.86, 0.95, "scale");
+
+  // palm tree (South Florida signature)
+  function palm(x, z, h, s) {
+    var g = new THREE.Group();
+    for (var k = 0; k < 6; k++) { var seg = cyl(0.16 * s, 0.2 * s, h / 6, M.palm, Math.sin(k * 0.5) * 0.25 * s, (k + 0.5) * (h / 6), Math.cos(k * 0.4) * 0.15 * s, 8); g.add(seg); }
+    var top = new THREE.Vector3(Math.sin(3) * 0.25 * s, h, Math.cos(2.4) * 0.15 * s);
+    for (var f = 0; f < 8; f++) {
+      var fr = box(2.6 * s, 0.08, 0.5 * s, M.frond, 0, 0, 0);
+      fr.position.copy(top); fr.rotation.y = f * (Math.PI / 4); fr.rotation.z = -0.5 + (f % 2) * 0.15;
+      fr.geometry.translate(1.3 * s, 0, 0); g.add(fr);
+    }
+    g.add(cyl(0.3 * s, 0.4 * s, 0.3, M.hedge, top.x, top.y - 0.1, top.z, 8)); // crown
+    g.position.set(x, 0, z);
+    return reg(g, 0.83, 0.93, "scale");
+  }
+  palm(-8, 6.5, 6.5, 1.0); palm(9, 3.5, 5.6, 0.9); palm(-9, -2, 6, 1.05);
+  // leafy tree
   function tree(x, z, s) {
     var g = new THREE.Group();
-    var tr = box(0.4 * s, 2.2 * s, 0.4 * s, M.trunk, 0, 1.1 * s, 0); g.add(tr);
-    var f1 = new THREE.Mesh(new THREE.IcosahedronGeometry(1.5 * s, 0), M.leaf); f1.position.y = 2.8 * s; g.add(f1);
-    var f2 = new THREE.Mesh(new THREE.IcosahedronGeometry(1.1 * s, 0), M.leaf); f2.position.set(0.6 * s, 3.6 * s, 0.3 * s); g.add(f2);
-    g.position.set(x, 0, z);
-    g.traverse(function (o) { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
-    return g;
+    g.add(box(0.4 * s, 2.2 * s, 0.4 * s, M.trunk, 0, 1.1 * s, 0));
+    var f1 = new THREE.Mesh(new THREE.IcosahedronGeometry(1.5 * s, 0), M.leaf.clone()); f1.position.y = 2.9 * s; g.add(f1);
+    var f2 = new THREE.Mesh(new THREE.IcosahedronGeometry(1.1 * s, 0), M.leaf.clone()); f2.position.set(0.7 * s, 3.6 * s, 0.3 * s); g.add(f2);
+    g.position.set(x, 0, z); return reg(g, 0.85, 0.95, "scale");
   }
-  reg(tree(-7.5, 6.5, 1.1), 0.84, 0.94, "scale");
-  reg(tree(8.0, 4.0, 0.9), 0.86, 0.96, "scale");
-  reg(tree(-8.5, -2.0, 1.0), 0.85, 0.95, "scale");
-  // shrubs along the front
-  for (var s = 0; s < 6; s++) {
-    var sh = new THREE.Mesh(new THREE.IcosahedronGeometry(0.5, 0), M.leaf);
-    sh.position.set(-4.2 + s * 1.5, 0.4, frontZ + 0.9); sh.castShadow = true;
-    reg(sh, 0.86 + s * 0.008, 0.95 + s * 0.008, "scale");
-  }
+  tree(7.5, 7.8, 1.0);
 
-  /* ---- crane (present during framing, then leaves) ---- */
-  var crane = new THREE.Group();
-  crane.add(box(0.3, 13, 0.3, M.frame, 0, 6.5, 0));
-  crane.add(box(11, 0.3, 0.3, M.frame, 2.5, 12.6, 0));
-  crane.add(box(0.1, 2.2, 0.1, M.frame, 6.5, 11.4, 0));
-  crane.add(box(0.5, 0.4, 0.5, M.frame, 6.5, 10.2, 0));
-  crane.position.set(8.5, 0, -4.5);
-  crane.traverse(function (o) { if (o.isMesh) { o.castShadow = true; o.material = o.material.clone(); o.material.transparent = true; } });
-  scene.add(crane);
+  // parked car in the driveway
+  var carG = new THREE.Group();
+  carG.add(box(3.6, 0.7, 1.7, M.car, 0, 0.75, 0));
+  carG.add(box(2.2, 0.6, 1.5, M.car, -0.1, 1.25, 0));
+  carG.add(box(2.0, 0.5, 1.42, M.glass, -0.1, 1.28, 0));
+  [[1.2, 0.9], [1.2, -0.9], [-1.2, 0.9], [-1.2, -0.9]].forEach(function (w) { var wh = cyl(0.36, 0.36, 0.3, M.dark, w[0], 0.4, w[1], 14); wh.rotation.x = Math.PI / 2; carG.add(wh); });
+  carG.position.set(-3.4, 0, 9.2); carG.rotation.y = Math.PI / 2;
+  reg(carG, 0.88, 0.96, "scale");
 
-  // collect glass panels (for warm night lighting)
+  /* ---- path + facade lights (glow at dusk) ---- */
+  function plight(x, z) { var m = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 10), M.lightGlow.clone()); m.position.set(x, 0.5, z); reg(m, 0.86, 0.94, "fade", { opacity: 1, noshadow: true }); lights.push(m); return m; }
+  plight(-1.3, 6.2); plight(0.7, 6.2); plight(-1.3, 8.2); plight(0.7, 8.2); plight(-5.2, 8.6); plight(5.2, 6.4);
+
+  // collect glass for night lighting
   parts.forEach(function (m) { if (m.material && m.material.color && m.material.color.getHex() === 0x9fc0d8) glassMeshes.push(m); });
 
   /* ---- per-part update ---- */
@@ -241,55 +356,51 @@
     var u = m.userData, e = easeOut(clamp((p - u.t0) / (u.t1 - u.t0), 0, 1));
     if (u.mode === "growY") { m.scale.y = Math.max(0.0001, e); m.visible = e > 0.002; }
     else if (u.mode === "scale") { var s = Math.max(0.0001, e); m.scale.set(u.fs.x * s, u.fs.y * s, u.fs.z * s); m.visible = e > 0.002; }
-    else if (u.mode === "drop") { m.position.y = u.fy + (1 - e) * 7; m.visible = e > 0.002; m.material.transparent = true; m.material.opacity = clamp(e * 1.5, 0, 1); }
+    else if (u.mode === "drop") { m.position.y = u.fy + (1 - e) * 7; m.visible = e > 0.002; if (m.material) { m.material.transparent = true; m.material.opacity = clamp(e * 1.6, 0, 1); } }
     else if (u.mode === "fade") { m.material.opacity = e * u.op; m.visible = e > 0.002; }
+  }
+  function applyTemp(grp, p) {
+    var u = grp.userData;
+    var o = clamp((p - u.i0) / (u.i1 - u.i0), 0, 1) * clamp(1 - (p - u.o0) / (u.o1 - u.o0), 0, 1);
+    grp.visible = o > 0.01;
+    grp.traverse(function (m) { if (m.isMesh) m.material.opacity = o; });
   }
 
   var target = new THREE.Vector3(0, 3.2, 0);
   function setCamera(p) {
-    var az = lerp(-0.62, 0.34, easeInOut(p));
-    var rad = lerp(30, 23, p), hgt = lerp(7.5, 12, easeInOut(p));
+    var az = lerp(-0.66, 0.4, easeInOut(p));
+    var rad = lerp(31, 22, p), hgt = lerp(7, 12.5, easeInOut(p));
     camera.position.set(Math.sin(az) * rad, hgt, Math.cos(az) * rad);
     camera.lookAt(target);
   }
 
+  var duskOn = false;
   function setProgress(p) {
     p = clamp(p, 0, 1);
     for (var i = 0; i < parts.length; i++) applyPart(parts[i], p);
-    // framing gets clad/enclosed by the walls (fade out 0.52 -> 0.64)
+    for (var ti = 0; ti < temps.length; ti++) applyTemp(temps[ti], p);
+    // framing enclosed by walls
     var fo = clamp(1 - (p - 0.52) / 0.12, 0, 1);
-    for (var k = 0; k < frameParts.length; k++) {
-      var fm = frameParts[k];
-      fm.material.opacity = (fm.userData.mode === "fade" ? fm.material.opacity : 1) * fo;
-      if (fm.material.opacity < 0.02) fm.visible = false;
-    }
-    // crane fades in (0.16-0.26) then leaves (0.62-0.72)
-    var cop = clamp((p - 0.16) / 0.1, 0, 1) * clamp(1 - (p - 0.62) / 0.1, 0, 1);
-    crane.visible = cop > 0.01;
-    crane.traverse(function (o) { if (o.isMesh) o.material.opacity = cop; });
-    // blueprint grid fades as the slab is poured
-    var go = clamp(1 - (p - 0.04) / 0.16, 0, 1) * 0.9;
-    grid.material.opacity = go; grid.visible = go > 0.01;
-    // golden hour + warm window lights toward the end
+    for (var k = 0; k < frameParts.length; k++) { var fm = frameParts[k]; fm.material.opacity = (fm.userData.mode === "fade" ? fm.material.opacity : 1) * fo; if (fm.material.opacity < 0.02) fm.visible = false; }
+    // grid + contact shadow
+    grid.material.opacity = clamp(1 - (p - 0.04) / 0.16, 0, 1) * 0.9; grid.visible = grid.material.opacity > 0.01;
+    contact.material.opacity = clamp((p - 0.4) / 0.2, 0, 1) * 0.22;
+    // golden hour + lights
     var e2 = clamp((p - 0.84) / 0.16, 0, 1);
-    sun.position.set(lerp(9, 3.5, e2), lerp(15, 5.5, e2), lerp(7, 9, e2));
+    sun.position.set(lerp(10, 3.5, e2), lerp(16, 5.5, e2), lerp(8, 9, e2));
     sun.color.setHSL(lerp(0.12, 0.07, e2), 0.55, lerp(0.92, 0.72, e2));
-    sun.intensity = lerp(1.15, 0.9, e2);
-    hemi.intensity = lerp(0.62, 0.4, e2);
-    for (var g = 0; g < glassMeshes.length; g++) {
-      glassMeshes[g].material.emissive.setHex(0xffb457);
-      glassMeshes[g].material.emissiveIntensity = e2 * 1.2;
-    }
-    // dusk backdrop + stars
+    sun.intensity = lerp(1.2, 0.85, e2);
+    hemi.intensity = lerp(0.6, 0.38, e2);
+    for (var g = 0; g < glassMeshes.length; g++) { glassMeshes[g].material.emissive.setHex(0xffb457); glassMeshes[g].material.emissiveIntensity = e2 * 1.2; }
+    for (var li = 0; li < lights.length; li++) lights[li].material.emissiveIntensity = e2 * 2.2;
     stars.material.opacity = e2 * 0.9; stars.visible = e2 > 0.02;
     var wantDusk = e2 > 0.45;
     if (wantDusk !== duskOn) { duskOn = wantDusk; scene.background = duskOn ? skyDusk : skyDay; scene.environment = duskOn ? skyDusk : skyDay; }
     scene.fog.color.setHex(duskOn ? 0x3a3350 : 0xcfdae0);
-    renderer.toneMappingExposure = lerp(1.06, 1.16, e2);
+    renderer.toneMappingExposure = lerp(1.06, 1.15, e2);
     setCamera(p);
     renderer.render(scene, camera);
   }
-  var duskOn = false;
 
   function resize() {
     var w = canvas.clientWidth || canvas.offsetWidth, h = canvas.clientHeight || canvas.offsetHeight;
@@ -301,14 +412,10 @@
   var lastP = 0;
   window.__dk3SetBuild = function (p) { lastP = p; setProgress(p); };
 
-  // mark section as 3D-enabled (hides the fallback image)
   var section = document.querySelector(".xform");
   if (section) section.setAttribute("data-3d", "on");
-
   window.addEventListener("resize", resize);
-  // a couple of delayed resizes to catch late layout/font shifts
-  resize();
-  setTimeout(resize, 300);
+  resize(); setTimeout(resize, 300);
   window.addEventListener("load", function () { setTimeout(resize, 200); });
   setProgress(reduce ? 1 : 0);
 })();
