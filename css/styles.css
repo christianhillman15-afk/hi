@@ -1598,3 +1598,22 @@ body.intro-active { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) {
   .scroll-progress { display: none; }
 }
+
+/* =============================================================
+   26 · Page transitions — cross-document View Transitions
+   Native crossfade in supporting browsers; graceful elsewhere.
+   ============================================================= */
+@view-transition { navigation: auto; }
+::view-transition-old(root) { animation: pt-out 0.3s var(--ease) both; }
+::view-transition-new(root) { animation: pt-in 0.44s var(--ease) both; }
+@keyframes pt-out { to   { opacity: 0; transform: translateY(-10px) scale(0.995); } }
+@keyframes pt-in  { from { opacity: 0; transform: translateY(14px)  scale(0.995); } }
+
+/* JS fallback (browsers without View Transitions): fade the page out on exit */
+body { transition: opacity 0.3s var(--ease); }
+body.is-leaving { opacity: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root), ::view-transition-new(root) { animation: none !important; }
+  body, body.is-leaving { transition: none; opacity: 1; }
+}

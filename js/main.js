@@ -462,6 +462,26 @@
     });
   }
 
+  /* ---------- Page-transition fallback (no cross-document View Transitions) ---------- */
+  if (!reduceMotion && !("startViewTransition" in doc)) {
+    doc.addEventListener("click", function (e) {
+      if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+      var a = e.target.closest && e.target.closest("a");
+      if (!a) return;
+      var href = a.getAttribute("href");
+      if (!href || a.target === "_blank" || a.hasAttribute("download")) return;
+      if (href.charAt(0) === "#" || /^(mailto:|tel:)/.test(href)) return;
+      var url;
+      try { url = new URL(href, location.href); } catch (err) { return; }
+      if (url.origin !== location.origin) return;
+      if (url.pathname === location.pathname && url.search === location.search) return;
+      e.preventDefault();
+      body.classList.add("is-leaving");
+      setTimeout(function () { window.location.href = url.href; }, 300);
+    });
+    window.addEventListener("pageshow", function (e) { if (e.persisted) body.classList.remove("is-leaving"); });
+  }
+
   /* ---------- Footer year ---------- */
   var yearEl = $("#year");
   if (yearEl) yearEl.textContent = new Date().getFullYear();
