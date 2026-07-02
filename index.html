@@ -26,6 +26,8 @@
 
   <link rel="preconnect" href="https://images.unsplash.com" crossorigin />
   <link rel="stylesheet" href="css/styles.css" />
+  <!-- No-JS safety: never show the intro curtain if scripts are disabled -->
+  <noscript><style>.intro{display:none!important}body.intro-active{overflow:auto!important}</style></noscript>
 
   <!-- Local business structured data -->
   <script type="application/ld+json">
@@ -52,7 +54,23 @@
   }
   </script>
 </head>
-<body>
+<body class="intro-active">
+  <!-- ============ INTRO CURTAIN ============ -->
+  <div class="intro" aria-hidden="true">
+    <div class="intro__inner">
+      <div class="intro__mark">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 20V5.5C4 4.67 4.67 4 5.5 4H12.5C16.9 4 20 7.1 20 12C20 16.9 16.9 20 12.5 20H4Z" stroke="#14100a" stroke-width="2.1" stroke-linejoin="round"/><path d="M9 4V20" stroke="#14100a" stroke-width="2.1"/><path d="M13.2 12L18.6 6" stroke="#14100a" stroke-width="2.1" stroke-linecap="round"/><path d="M13.2 12L18.6 18" stroke="#14100a" stroke-width="2.1" stroke-linecap="round"/></svg>
+      </div>
+      <div class="intro__word"><span>DK3 Construction</span></div>
+      <div class="intro__sub">Fort Lauderdale · Design &amp; Build</div>
+    </div>
+    <div class="intro__count">0</div>
+    <div class="intro__bar"></div>
+  </div>
+
+  <!-- ============ CUSTOM CURSOR ============ -->
+  <div class="cursor" aria-hidden="true"><div class="cursor__dot"></div><div class="cursor__ring"></div></div>
+
   <!-- ============ HEADER ============ -->
   <header class="site-header">
     <div class="container">
@@ -110,13 +128,13 @@
   <main>
     <!-- ============ HERO ============ -->
     <section class="hero">
-      <div class="hero__media">
+      <div class="hero__media" data-parallax="0.08" style="top:-14%;height:128%">
         <img src="https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=2000&q=75" alt="Luxury South Florida home with pool at dusk built by DK3 Construction" fetchpriority="high" />
       </div>
       <div class="hero__overlay"></div>
       <div class="container hero__inner">
         <span class="hero__eyebrow"><span class="dot"></span> Licensed &amp; Insured · <b>Fort Lauderdale, FL</b></span>
-        <h1 class="display">Ground&#8209;up to grand finish, built <em>without compromise.</em></h1>
+        <h1 class="display split-text">Ground&#8209;up to grand finish, built <em>without compromise.</em></h1>
         <p class="hero__lead">DK3 Construction is a licensed Fort Lauderdale general contractor delivering luxury residential and commercial projects — from site excavation and earthmoving to design‑build and the final finish.</p>
         <div class="hero__cta">
           <a href="contact.html" class="btn btn--lg">Start Your Project
@@ -173,6 +191,20 @@
         <span class="marquee__item">Commercial</span>
       </div>
     </div>
+
+    <!-- ============ STATEMENT / MANIFESTO ============ -->
+    <section class="statement dark ink-950">
+      <div class="container">
+        <span class="eyebrow on-dark statement__eyebrow">The DK3 standard</span>
+        <h2 class="split-text"><span class="muted-line">We don't just</span> build structures. We build the places South Florida <em>remembers.</em></h2>
+        <div class="statement__foot">
+          <p class="lead">Every wall, every weld, every finish line reflects a simple obsession: do it right, or don't do it at all. That standard is why homeowners and hotel groups keep handing us the keys.</p>
+          <a href="about.html" class="link-arrow on-dark">Our approach
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+        </div>
+      </div>
+    </section>
 
     <!-- ============ INTRO / ABOUT PREVIEW ============ -->
     <section class="section">
@@ -266,62 +298,51 @@
       </div>
     </section>
 
-    <!-- ============ FEATURED PROJECTS ============ -->
-    <section class="section dark">
-      <div class="container">
-        <div class="section-head" style="display:flex;justify-content:space-between;align-items:flex-end;max-width:none;gap:30px;flex-wrap:wrap;">
-          <div style="max-width:640px;">
+    <!-- ============ FEATURED PROJECTS — horizontal pin ============ -->
+    <section class="hpin dark">
+      <div class="hpin__sticky">
+        <div class="hpin__track">
+          <div class="hpin__intro">
             <span class="eyebrow on-dark">Selected work</span>
-            <h2 class="h2" style="margin-top:20px;">Projects that set the standard.</h2>
-            <p class="lead">From South Beach boutique hotels to custom waterfront homes, our portfolio speaks to the quality we bring to every job site.</p>
+            <h2 class="h2" style="margin-top:20px;color:#fff;">Projects that set the standard.</h2>
+            <p class="lead" style="margin-top:16px;">From South Beach boutique hotels to custom waterfront homes — scroll to explore the work we're proud to put our name on.</p>
+            <a href="projects.html" class="btn btn--ghost on-dark" style="margin-top:26px;">All projects
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </a>
           </div>
-          <a href="projects.html" class="btn btn--ghost on-dark">All projects
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-          </a>
-        </div>
 
-        <div class="gallery">
-          <a class="tile span-8 tall reveal" href="projects.html" data-cat="hospitality">
-            <img src="https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1400&q=70" alt="Berkeley Park Hotel — hospitality construction, Miami Beach" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?auto=format&fit=crop&w=1400&q=70'" />
-            <div class="tile__body">
-              <span class="tile__cat">Hospitality</span>
-              <h3>Berkeley Park Hotel</h3>
-              <p class="meta">Full renovation &amp; finishes · Miami Beach</p>
-            </div>
+          <a class="hpin__card" href="projects.html">
+            <span class="hpin__num">01</span>
+            <img src="https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1000&q=70" alt="Berkeley Park Hotel — hospitality construction, Miami Beach" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?auto=format&fit=crop&w=1000&q=70'" />
+            <div class="b"><span class="cat">Hospitality</span><h3>Berkeley Park Hotel</h3><p class="meta">Renovation &amp; finishes · Miami Beach</p></div>
           </a>
-          <a class="tile span-4 tall reveal d1" href="projects.html" data-cat="residential">
-            <img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=900&q=70" alt="Custom luxury residence built by DK3 Construction" loading="lazy" />
-            <div class="tile__body">
-              <span class="tile__cat">Residential</span>
-              <h3>Waterfront Custom Home</h3>
-              <p class="meta">Ground‑up build · Fort Lauderdale</p>
-            </div>
+          <a class="hpin__card" href="projects.html">
+            <span class="hpin__num">02</span>
+            <img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1000&q=70" alt="Custom luxury residence built by DK3 Construction" loading="lazy" />
+            <div class="b"><span class="cat">Residential</span><h3>Waterfront Custom Home</h3><p class="meta">Ground‑up build · Fort Lauderdale</p></div>
           </a>
-          <a class="tile span-4 reveal" href="projects.html" data-cat="sitework">
-            <img src="https://images.unsplash.com/photo-1565008447742-97f6f38c985c?auto=format&fit=crop&w=900&q=70" alt="Site excavation and earthmoving by DK3 Construction" loading="lazy" />
-            <div class="tile__body">
-              <span class="tile__cat">Sitework</span>
-              <h3>Site Prep &amp; Excavation</h3>
-              <p class="meta">Grading &amp; earthmoving · South Florida</p>
-            </div>
+          <a class="hpin__card" href="projects.html">
+            <span class="hpin__num">03</span>
+            <img src="https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1000&q=70" alt="Uma House South Beach interior finishes" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1000&q=70'" />
+            <div class="b"><span class="cat">Hospitality</span><h3>Uma House</h3><p class="meta">Interior build‑out · South Beach</p></div>
           </a>
-          <a class="tile span-4 reveal d1" href="projects.html" data-cat="hospitality">
-            <img src="https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=900&q=70" alt="Uma House South Beach interior finishes" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=900&q=70'" />
-            <div class="tile__body">
-              <span class="tile__cat">Hospitality</span>
-              <h3>Uma House</h3>
-              <p class="meta">Interior build‑out · South Beach</p>
-            </div>
+          <a class="hpin__card" href="projects.html">
+            <span class="hpin__num">04</span>
+            <img src="https://images.unsplash.com/photo-1523217582562-09d0def993a6?auto=format&fit=crop&w=1000&q=70" alt="Luxury pool and outdoor living installation by DK3 Construction" loading="lazy" />
+            <div class="b"><span class="cat">Pools &amp; Outdoor</span><h3>Resort‑Style Pool</h3><p class="meta">Pool, deck &amp; hardscape · Las Olas</p></div>
           </a>
-          <a class="tile span-4 reveal d2" href="projects.html" data-cat="residential">
-            <img src="https://images.unsplash.com/photo-1523217582562-09d0def993a6?auto=format&fit=crop&w=900&q=70" alt="Luxury pool and outdoor living installation by DK3 Construction" loading="lazy" />
-            <div class="tile__body">
-              <span class="tile__cat">Pools &amp; Outdoor</span>
-              <h3>Resort‑Style Pool</h3>
-              <p class="meta">Pool, deck &amp; hardscape · Las Olas</p>
-            </div>
+          <a class="hpin__card" href="projects.html">
+            <span class="hpin__num">05</span>
+            <img src="https://images.unsplash.com/photo-1565008447742-97f6f38c985c?auto=format&fit=crop&w=1000&q=70" alt="Site excavation and earthmoving by DK3 Construction" loading="lazy" />
+            <div class="b"><span class="cat">Sitework</span><h3>Site Prep &amp; Excavation</h3><p class="meta">Grading &amp; earthmoving · South Florida</p></div>
+          </a>
+          <a class="hpin__card" href="projects.html">
+            <span class="hpin__num">06</span>
+            <img src="https://images.unsplash.com/photo-1487958449943-2429e8be8625?auto=format&fit=crop&w=1000&q=70" alt="Urbanica The Meridian Hotel — Miami Beach" loading="lazy" />
+            <div class="b"><span class="cat">Commercial</span><h3>Urbanica The Meridian</h3><p class="meta">Hospitality build · Miami Beach</p></div>
           </a>
         </div>
+        <div class="hpin__progress"><span></span></div>
       </div>
     </section>
 
@@ -548,6 +569,7 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
   </button>
 
+  <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.20/dist/lenis.min.js" defer></script>
   <script src="js/main.js" defer></script>
 </body>
 </html>

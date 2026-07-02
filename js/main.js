@@ -1,22 +1,26 @@
 /* =============================================================
    DK3 Construction — interactions
-   Vanilla JS, no dependencies. Progressive enhancement.
+   Vanilla JS, no hard dependencies. Progressive enhancement.
+   Cinematic layer: intro reveal, smooth scroll (Lenis if present),
+   kinetic split-text, parallax, horizontal pin, custom cursor.
    ============================================================= */
 (function () {
   "use strict";
   var doc = document;
   var body = doc.body;
+  var docEl = doc.documentElement;
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var finePointer = window.matchMedia("(pointer: fine)").matches;
 
   function $(sel, ctx) { return (ctx || doc).querySelector(sel); }
   function $all(sel, ctx) { return Array.prototype.slice.call((ctx || doc).querySelectorAll(sel)); }
+  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
 
   /* ---------- Header scrolled state ---------- */
   var header = $(".site-header");
   function onScrollHeader() {
     if (!header) return;
-    if (window.scrollY > 24) header.classList.add("scrolled");
-    else header.classList.remove("scrolled");
+    header.classList.toggle("scrolled", window.scrollY > 24);
   }
   onScrollHeader();
   window.addEventListener("scroll", onScrollHeader, { passive: true });
@@ -33,12 +37,114 @@
     if (navToggle) navToggle.setAttribute("aria-expanded", open ? "true" : "false");
   }
   if (navToggle) navToggle.addEventListener("click", toggleNav);
-  if (mobileMenu) {
-    $all("a", mobileMenu).forEach(function (a) { a.addEventListener("click", closeNav); });
+  if (mobileMenu) $all("a", mobileMenu).forEach(function (a) { a.addEventListener("click", closeNav); });
+  doc.addEventListener("keydown", function (e) { if (e.key === "Escape") closeNav(); });
+
+  /* ---------- Kinetic split-text ---------- */
+  function splitText(el) {
+    var nodes = Array.prototype.slice.call(el.childNodes);
+    var frag = doc.createDocumentFragment();
+    var i = 0;
+    nodes.forEach(function (node) {
+      if (node.nodeType === 3) {
+        splitTokens(node.textContent, null);
+      } else if (node.nodeType === 1) {
+        splitTokens(node.textContent, node.tagName.toLowerCase(), node.className);
+      }
+    });
+    function splitTokens(text, tag, cls) {
+      text.split(/(\s+)/).forEach(function (tok) {
+        if (tok === "") return;
+        if (/^\s+$/.test(tok)) { frag.appendChild(doc.createTextNode(tok)); return; }
+        var mask = doc.createElement("span");
+        mask.className = "kw";
+        var inner = doc.createElement(tag || "span");
+        inner.className = "kw__i" + (cls ? " " + cls : "");
+        inner.style.setProperty("--i", i++);
+        inner.textContent = tok;
+        mask.appendChild(inner);
+        frag.appendChild(mask);
+      });
+    }
+    el.innerHTML = "";
+    el.appendChild(frag);
   }
-  doc.addEventListener("keydown", function (e) {
-    if (e.key === "Escape") closeNav();
-  });
+
+  var heroSplit = $(".hero .split-text");
+  if (!reduceMotion) {
+    $all(".split-text").forEach(splitText);
+    if ("IntersectionObserver" in window) {
+      var sio = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) { e.target.classList.add("is-revealed"); sio.unobserve(e.target); }
+        });
+      }, { threshold: 0.2 });
+      $all(".split-text").forEach(function (el) { if (el !== heroSplit) sio.observe(el); });
+    } else {
+      $all(".split-text").forEach(function (el) { el.classList.add("is-revealed"); });
+    }
+  }
+  function revealHero() { if (heroSplit) heroSplit.classList.add("is-revealed"); }
+
+  /* ---------- Intro / preloader ---------- */
+  (function () {
+    var intro = $(".intro");
+    if (!intro) { revealHero(); return; }
+    var seen = false;
+    try { seen = sessionStorage.getItem("dk3_intro") === "1"; } catch (e) {}
+    if (reduceMotion || seen) {
+      intro.parentNode && intro.parentNode.removeChild(intro);
+      body.classList.remove("intro-active");
+      revealHero();
+      return;
+    }
+    try { sessionStorage.setItem("dk3_intro", "1"); } catch (e) {}
+
+    body.classList.add("intro-active");
+
+    var countEl = $(".intro__count", intro);
+    if (countEl) {
+      var start = null, dur = 1000;
+      var step = function (ts) {
+        if (start === null) start = ts;
+        var p = clamp((ts - start) / dur, 0, 1);
+        countEl.textContent = Math.round(p * 100);
+        if (p < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    }
+
+    var finished = false;
+    function finish() {
+      if (finished) return;
+      finished = true;
+      body.classList.add("intro-done");
+      body.classList.remove("intro-active");
+      revealHero();
+      setTimeout(function () { intro.parentNode && intro.parentNode.removeChild(intro); }, 1000);
+    }
+    window.addEventListener("load", function () { setTimeout(finish, 750); });
+    setTimeout(finish, 2400); // hard cap so it can never get stuck
+  })();
+
+  /* ---------- Smooth scroll (Lenis if available) ---------- */
+  var lenis = null;
+  if (!reduceMotion && finePointer && typeof window.Lenis === "function") {
+    try {
+      lenis = new window.Lenis({ duration: 1.1, smoothWheel: true, lerp: 0.1 });
+      var raf = function (t) { lenis.raf(t); requestAnimationFrame(raf); };
+      requestAnimationFrame(raf);
+      // anchor links through Lenis
+      $all('a[href^="#"]').forEach(function (a) {
+        var id = a.getAttribute("href");
+        if (id.length < 2) return;
+        a.addEventListener("click", function (e) {
+          var target = doc.querySelector(id);
+          if (target) { e.preventDefault(); lenis.scrollTo(target, { offset: -90 }); }
+        });
+      });
+    } catch (err) { lenis = null; }
+  }
 
   /* ---------- Scroll reveal ---------- */
   var reveals = $all(".reveal");
@@ -47,10 +153,7 @@
   } else {
     var io = new IntersectionObserver(function (entries) {
       entries.forEach(function (entry) {
-        if (entry.isIntersecting) {
-          entry.target.classList.add("is-visible");
-          io.unobserve(entry.target);
-        }
+        if (entry.isIntersecting) { entry.target.classList.add("is-visible"); io.unobserve(entry.target); }
       });
     }, { threshold: 0.12, rootMargin: "0px 0px -8% 0px" });
     reveals.forEach(function (el) { io.observe(el); });
@@ -59,36 +162,117 @@
   /* ---------- Animated counters ---------- */
   function animateCount(el) {
     var target = parseFloat(el.getAttribute("data-count"));
-    var decimals = (el.getAttribute("data-decimals")) ? parseInt(el.getAttribute("data-decimals"), 10) : 0;
-    var dur = 1600;
-    var start = null;
+    var decimals = el.getAttribute("data-decimals") ? parseInt(el.getAttribute("data-decimals"), 10) : 0;
     if (reduceMotion) { el.textContent = target.toFixed(decimals); return; }
+    var dur = 1600, start = null;
     function tick(ts) {
       if (start === null) start = ts;
       var p = Math.min((ts - start) / dur, 1);
       var eased = 1 - Math.pow(1 - p, 3);
       el.textContent = (target * eased).toFixed(decimals);
-      if (p < 1) requestAnimationFrame(tick);
-      else el.textContent = target.toFixed(decimals);
+      if (p < 1) requestAnimationFrame(tick); else el.textContent = target.toFixed(decimals);
     }
     requestAnimationFrame(tick);
   }
   var counters = $all("[data-count]");
   if (counters.length) {
-    if (!("IntersectionObserver" in window)) {
-      counters.forEach(animateCount);
-    } else {
+    if (!("IntersectionObserver" in window)) { counters.forEach(animateCount); }
+    else {
       var cio = new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {
-          if (entry.isIntersecting) {
-            animateCount(entry.target);
-            cio.unobserve(entry.target);
-          }
+          if (entry.isIntersecting) { animateCount(entry.target); cio.unobserve(entry.target); }
         });
       }, { threshold: 0.6 });
       counters.forEach(function (el) { cio.observe(el); });
     }
   }
+
+  /* ---------- Parallax + horizontal pin (single rAF loop) ---------- */
+  var parallaxEls = $all("[data-parallax]");
+  var hpin = $(".hpin");
+  var hpinTrack = hpin ? $(".hpin__track", hpin) : null;
+  var hpinBar = hpin ? $(".hpin__progress span", hpin) : null;
+  var hpinActive = false;
+
+  function setupHpin() {
+    if (!hpin || !hpinTrack) return;
+    var wide = window.innerWidth >= 900;
+    if (wide && finePointer && !reduceMotion && hpinTrack.scrollWidth > window.innerWidth) {
+      hpinActive = true;
+      hpin.classList.add("hpin--active");
+      var scrollLen = hpinTrack.scrollWidth - window.innerWidth;
+      hpin.style.height = (scrollLen + window.innerHeight) + "px";
+    } else {
+      hpinActive = false;
+      hpin.classList.remove("hpin--active");
+      hpin.style.height = "";
+      hpinTrack.style.transform = "";
+    }
+  }
+
+  var vh = window.innerHeight;
+  function updateScrollFx() {
+    // parallax
+    if (!reduceMotion) {
+      for (var i = 0; i < parallaxEls.length; i++) {
+        var el = parallaxEls[i];
+        var rect = el.parentNode.getBoundingClientRect();
+        if (rect.bottom < -200 || rect.top > vh + 200) continue;
+        var speed = parseFloat(el.getAttribute("data-parallax")) || 0.15;
+        var progress = (vh - rect.top) / (vh + rect.height); // 0..1 across viewport
+        var shift = (progress - 0.5) * rect.height * speed * 2;
+        el.style.transform = "translate3d(0," + shift.toFixed(2) + "px,0)";
+      }
+    }
+    // horizontal pin
+    if (hpinActive && hpin && hpinTrack) {
+      var total = hpin.offsetHeight - vh;
+      var p = total > 0 ? clamp(-hpin.getBoundingClientRect().top / total, 0, 1) : 0;
+      var x = p * (hpinTrack.scrollWidth - window.innerWidth);
+      hpinTrack.style.transform = "translate3d(" + (-x).toFixed(2) + "px,0,0)";
+      if (hpinBar) hpinBar.style.width = (p * 100).toFixed(1) + "%";
+    }
+  }
+  if (parallaxEls.length || hpin) {
+    setupHpin();
+    var ticking = false;
+    function onFx() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(function () { updateScrollFx(); ticking = false; });
+    }
+    window.addEventListener("scroll", onFx, { passive: true });
+    if (lenis && lenis.on) lenis.on("scroll", onFx);
+    var rt;
+    window.addEventListener("resize", function () {
+      clearTimeout(rt);
+      rt = setTimeout(function () { vh = window.innerHeight; setupHpin(); updateScrollFx(); }, 160);
+    });
+    window.addEventListener("load", function () { setTimeout(function () { setupHpin(); updateScrollFx(); }, 200); });
+    updateScrollFx();
+  }
+
+  /* ---------- Custom cursor ---------- */
+  (function () {
+    var cursor = $(".cursor");
+    if (!cursor || !finePointer || reduceMotion) { if (cursor) cursor.remove(); return; }
+    var dot = $(".cursor__dot", cursor), ring = $(".cursor__ring", cursor);
+    var mx = window.innerWidth / 2, my = window.innerHeight / 2, rx = mx, ry = my, shown = false;
+    doc.addEventListener("mousemove", function (e) {
+      mx = e.clientX; my = e.clientY;
+      if (dot) { dot.style.left = mx + "px"; dot.style.top = my + "px"; }
+      if (!shown) { cursor.classList.add("ready"); shown = true; }
+    });
+    (function loop() {
+      rx += (mx - rx) * 0.18; ry += (my - ry) * 0.18;
+      if (ring) { ring.style.left = rx + "px"; ring.style.top = ry + "px"; }
+      requestAnimationFrame(loop);
+    })();
+    var hoverSel = "a, button, .tile, .card, .hpin__card, .filter-btn, input, textarea, select, .faq-q";
+    doc.addEventListener("mouseover", function (e) { if (e.target.closest && e.target.closest(hoverSel)) cursor.classList.add("is-hover"); });
+    doc.addEventListener("mouseout", function (e) { if (e.target.closest && e.target.closest(hoverSel)) cursor.classList.remove("is-hover"); });
+    doc.addEventListener("mouseleave", function () { cursor.classList.remove("ready"); shown = false; });
+  })();
 
   /* ---------- Testimonial slider ---------- */
   (function () {
@@ -98,9 +282,7 @@
     var dotsWrap = $(".testi__dots", root);
     var prev = $(".testi__arrow.prev", root);
     var next = $(".testi__arrow.next", root);
-    var i = 0, timer = null;
-    var dots = [];
-
+    var i = 0, timer = null, dots = [];
     slides.forEach(function (_, idx) {
       var d = doc.createElement("button");
       d.className = "testi__dot" + (idx === 0 ? " active" : "");
@@ -109,7 +291,6 @@
       if (dotsWrap) dotsWrap.appendChild(d);
       dots.push(d);
     });
-
     function go(n) {
       slides[i].classList.remove("active");
       if (dots[i]) dots[i].classList.remove("active");
@@ -118,10 +299,7 @@
       if (dots[i]) dots[i].classList.add("active");
       restart();
     }
-    function restart() {
-      if (timer) clearInterval(timer);
-      if (!reduceMotion) timer = setInterval(function () { go(i + 1); }, 6500);
-    }
+    function restart() { if (timer) clearInterval(timer); if (!reduceMotion) timer = setInterval(function () { go(i + 1); }, 6500); }
     if (prev) prev.addEventListener("click", function () { go(i - 1); });
     if (next) next.addEventListener("click", function () { go(i + 1); });
     restart();
@@ -148,18 +326,14 @@
 
   /* ---------- FAQ accordion ---------- */
   $all(".faq-item").forEach(function (item) {
-    var q = $(".faq-q", item);
-    var a = $(".faq-a", item);
+    var q = $(".faq-q", item), a = $(".faq-a", item);
     if (!q || !a) return;
     q.addEventListener("click", function () {
       var open = item.classList.contains("open");
-      // close siblings for a clean single-open accordion
       var parent = item.parentElement;
-      if (parent) {
-        $all(".faq-item.open", parent).forEach(function (o) {
-          if (o !== item) { o.classList.remove("open"); var oa = $(".faq-a", o); if (oa) oa.style.maxHeight = null; }
-        });
-      }
+      if (parent) $all(".faq-item.open", parent).forEach(function (o) {
+        if (o !== item) { o.classList.remove("open"); var oa = $(".faq-a", o); if (oa) oa.style.maxHeight = null; }
+      });
       if (open) { item.classList.remove("open"); a.style.maxHeight = null; }
       else { item.classList.add("open"); a.style.maxHeight = a.scrollHeight + "px"; }
     });
@@ -170,28 +344,19 @@
     var form = $("#contact-form");
     if (!form) return;
     var success = $(".form__success");
-
-    function setError(field, on) {
-      field.classList.toggle("invalid", on);
-    }
     function validEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
-
     form.addEventListener("submit", function (e) {
       e.preventDefault();
-      var ok = true;
+      var ok = true, firstBad = null;
       $all(".field", form).forEach(function (field) {
         var input = $("input, textarea, select", field);
         if (!input || !input.hasAttribute("required")) return;
         var v = (input.value || "").trim();
         var bad = !v || (input.type === "email" && !validEmail(v));
-        setError(field, bad);
-        if (bad && ok) { input.focus(); ok = false; }
-        else if (bad) ok = false;
+        field.classList.toggle("invalid", bad);
+        if (bad) { ok = false; if (!firstBad) firstBad = input; }
       });
-      if (!ok) return;
-
-      // No backend in this static build — show success and offer a mailto fallback.
-      // To wire real delivery, point form action to Formspree/Netlify/your API (see README).
+      if (!ok) { if (firstBad) firstBad.focus(); return; }
       var btn = $("button[type=submit]", form);
       if (btn) { btn.disabled = true; btn.textContent = "Sending…"; }
       window.setTimeout(function () {
@@ -199,8 +364,6 @@
         if (success) success.classList.add("show");
       }, 700);
     });
-
-    // Clear error state as the user types
     $all(".field input, .field textarea, .field select", form).forEach(function (input) {
       input.addEventListener("input", function () {
         var field = input.closest(".field");
@@ -213,14 +376,12 @@
   (function () {
     var btn = $(".to-top");
     if (!btn) return;
-    function onScroll() {
-      if (window.scrollY > 640) btn.classList.add("show");
-      else btn.classList.remove("show");
-    }
+    function onScroll() { btn.classList.toggle("show", window.scrollY > 640); }
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     btn.addEventListener("click", function () {
-      window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+      if (lenis) lenis.scrollTo(0);
+      else window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
     });
   })();
 

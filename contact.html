@@ -15,8 +15,25 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="preconnect" href="https://images.unsplash.com" crossorigin />
   <link rel="stylesheet" href="css/styles.css" />
+  <noscript><style>.intro{display:none!important}body.intro-active{overflow:auto!important}</style></noscript>
 </head>
-<body>
+<body class="intro-active">
+  <!-- ============ INTRO CURTAIN ============ -->
+  <div class="intro" aria-hidden="true">
+    <div class="intro__inner">
+      <div class="intro__mark">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 20V5.5C4 4.67 4.67 4 5.5 4H12.5C16.9 4 20 7.1 20 12C20 16.9 16.9 20 12.5 20H4Z" stroke="#14100a" stroke-width="2.1" stroke-linejoin="round"/><path d="M9 4V20" stroke="#14100a" stroke-width="2.1"/><path d="M13.2 12L18.6 6" stroke="#14100a" stroke-width="2.1" stroke-linecap="round"/><path d="M13.2 12L18.6 18" stroke="#14100a" stroke-width="2.1" stroke-linecap="round"/></svg>
+      </div>
+      <div class="intro__word"><span>DK3 Construction</span></div>
+      <div class="intro__sub">Fort Lauderdale · Design &amp; Build</div>
+    </div>
+    <div class="intro__count">0</div>
+    <div class="intro__bar"></div>
+  </div>
+
+  <!-- ============ CUSTOM CURSOR ============ -->
+  <div class="cursor" aria-hidden="true"><div class="cursor__dot"></div><div class="cursor__ring"></div></div>
+
   <!-- ============ HEADER ============ -->
   <header class="site-header">
     <div class="container">
@@ -50,10 +67,10 @@
   <main>
     <!-- ============ PAGE HERO ============ -->
     <section class="page-hero" style="padding-bottom:clamp(40px,6vh,72px);">
-      <div class="page-hero__media"><img src="https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=1800&q=70" alt="Luxury South Florida home at dusk" fetchpriority="high" /></div>
+      <div class="page-hero__media" data-parallax="0.1" style="top:-16%;height:132%"><img src="https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=1800&q=70" alt="Luxury South Florida home at dusk" fetchpriority="high" /></div>
       <div class="container">
         <nav class="breadcrumb" aria-label="Breadcrumb"><a href="index.html">Home</a><span class="sep">/</span><span class="current">Contact</span></nav>
-        <h1 class="h1">Let's build something great together.</h1>
+        <h1 class="h1 split-text">Let's build something great together.</h1>
         <p>Tell us about your project and we'll get back to you with a clear scope, timeline and free estimate. No pressure, no obligation — just an honest conversation.</p>
       </div>
     </section>
@@ -179,6 +196,7 @@
   </footer>
 
   <button class="to-top" aria-label="Back to top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+  <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.20/dist/lenis.min.js" defer></script>
   <script src="js/main.js" defer></script>
 </body>
 </html>

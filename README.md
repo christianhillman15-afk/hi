@@ -44,9 +44,16 @@ drop it on any host.
 - **Palette:** near‑black "ink" + warm paper + an amber‑gold accent (a premium,
   construction‑appropriate look).
 - **Type:** *Space Grotesk* (display) + *Inter* (body), loaded from Google Fonts.
+- **Cinematic motion layer** (inspired by high‑end agency sites): a one‑time
+  intro curtain (once per session), buttery smooth scrolling, kinetic
+  split‑text headline reveals, parallax hero imagery, a horizontal
+  scroll‑pinned project showcase on the home page, and a custom cursor.
 - **Motion:** scroll‑reveal, animated counters, a testimonial slider, hover
   interactions — all of which automatically disable under
-  `prefers-reduced-motion`.
+  `prefers-reduced-motion`, and everything degrades gracefully with JS off.
+- **Smooth scroll** uses [Lenis](https://github.com/darkroomengineering/lenis)
+  loaded from a CDN; if it fails to load, native scrolling is used — nothing
+  breaks. It's only enabled on fine‑pointer (desktop) devices.
 - **Responsive:** fluid layouts with a full mobile navigation menu.
 - **SEO:** per‑page titles/descriptions, Open Graph tags, a canonical URL, a
   `GeneralContractor` JSON‑LD block on the home page, plus `sitemap.xml` and

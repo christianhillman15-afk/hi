@@ -1249,3 +1249,139 @@ body.nav-open .mobile-menu { transform: translateY(0); opacity: 1; visibility: v
 .center { text-align: center; }
 .divider { height: 1px; background: var(--line-light); border: none; }
 .dark .divider { background: var(--line-dark-2); }
+
+/* =============================================================
+   21. CINEMATIC LAYER — MERIDIAN-style motion & polish
+   (intro reveal, kinetic type, smooth scroll, parallax,
+    horizontal pin, custom cursor, statement type)
+   ============================================================= */
+
+/* ---- Lenis smooth scroll ---- */
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
+.lenis.lenis-stopped { overflow: hidden; }
+
+/* ---- Intro / preloader curtain ---- */
+.intro {
+  position: fixed; inset: 0; z-index: 2000;
+  background: var(--ink-950);
+  display: grid; place-items: center;
+  overflow: hidden;
+}
+.intro__inner { text-align: center; position: relative; z-index: 2; }
+.intro__mark {
+  width: 66px; height: 66px; border-radius: 16px;
+  background: var(--gold); display: grid; place-items: center;
+  margin: 0 auto 22px; box-shadow: var(--sh-gold);
+  transform: scale(0.9); opacity: 0;
+  animation: introMark 0.7s var(--ease-2) 0.1s forwards;
+}
+.intro__mark svg { width: 36px; height: 36px; }
+@keyframes introMark { to { transform: scale(1); opacity: 1; } }
+.intro__word {
+  font-family: var(--font-display); font-weight: 600;
+  font-size: clamp(1.4rem, 3.5vw, 2.4rem); letter-spacing: 0.02em; color: #fff;
+  overflow: hidden;
+}
+.intro__word span { display: inline-block; transform: translateY(110%); animation: introUp 0.8s var(--ease-2) 0.35s forwards; }
+@keyframes introUp { to { transform: translateY(0); } }
+.intro__sub {
+  margin-top: 12px; font-family: var(--font-display); font-size: 0.74rem;
+  letter-spacing: 0.34em; text-transform: uppercase; color: var(--gold-200);
+  opacity: 0; animation: introFade 0.8s ease 0.7s forwards;
+}
+@keyframes introFade { to { opacity: 0.9; } }
+.intro__bar {
+  position: absolute; left: 0; bottom: 0; height: 3px; width: 0;
+  background: linear-gradient(90deg, var(--gold-600), var(--gold));
+  animation: introBar 1.05s var(--ease) 0.15s forwards;
+}
+@keyframes introBar { to { width: 100%; } }
+.intro__count {
+  position: absolute; right: clamp(20px,5vw,60px); bottom: clamp(18px,4vw,44px);
+  font-family: var(--font-display); font-size: clamp(2.4rem,8vw,5rem); font-weight: 600;
+  color: rgba(255,255,255,0.08); letter-spacing: -0.03em;
+}
+body.intro-done .intro { transform: translateY(-100%); transition: transform 0.9s var(--ease-2); }
+body.intro-active { overflow: hidden; }
+@media (prefers-reduced-motion: reduce) {
+  .intro { display: none !important; }
+  body.intro-active { overflow: auto; }
+}
+
+/* ---- Kinetic split-text ---- */
+.kw { display: inline-block; overflow: hidden; vertical-align: top; padding-bottom: 0.14em; margin-bottom: -0.14em; }
+.kw__i { display: inline-block; transform: translateY(115%); transition: transform 0.9s var(--ease-2); transition-delay: calc(var(--i, 0) * 0.055s); }
+.is-revealed .kw__i { transform: translateY(0); }
+@media (prefers-reduced-motion: reduce) {
+  .kw { overflow: visible; padding-bottom: 0; margin-bottom: 0; }
+  .kw__i { transform: none !important; transition: none; }
+}
+
+/* ---- Parallax ---- */
+[data-parallax] { will-change: transform; }
+.parallax-media { overflow: hidden; }
+.parallax-media img { transform: scale(1.15); }
+@media (prefers-reduced-motion: reduce) {
+  [data-parallax] { transform: none !important; }
+}
+
+/* ---- Grain + vignette for cinematic hero ---- */
+.hero::after {
+  content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background: radial-gradient(120% 90% at 50% 20%, transparent 55%, rgba(0,0,0,0.5) 100%);
+  mix-blend-mode: multiply;
+}
+.hero__inner, .scroll-cue { position: relative; z-index: 1; }
+
+/* ---- Statement / manifesto section ---- */
+.statement { padding-block: clamp(90px, 14vw, 200px); position: relative; overflow: hidden; }
+.statement__eyebrow { margin-bottom: 38px; }
+.statement h2 {
+  font-family: var(--font-display); font-weight: 500;
+  font-size: clamp(2rem, 6.2vw, 5.2rem); line-height: 1.04; letter-spacing: -0.035em;
+  max-width: 18ch;
+}
+.statement h2 .muted-line { color: var(--on-dark-3); }
+.statement h2 em { font-style: normal; color: var(--gold); }
+.statement__foot { margin-top: 48px; display: flex; flex-wrap: wrap; gap: 40px 64px; align-items: flex-end; justify-content: space-between; }
+.statement__foot p { max-width: 42ch; }
+
+/* ---- Horizontal pinned showcase ---- */
+.hpin { position: relative; background: var(--ink-950); }
+.hpin__sticky { position: sticky; top: 0; height: 100vh; display: flex; align-items: center; overflow: hidden; }
+.hpin__track { display: flex; gap: clamp(18px, 2vw, 30px); padding-inline: var(--gutter); will-change: transform; align-items: stretch; }
+.hpin__intro { flex: 0 0 auto; width: min(38vw, 460px); align-self: center; padding-right: 20px; }
+.hpin__intro .eyebrow { margin-bottom: 22px; }
+.hpin__card {
+  flex: 0 0 auto; width: clamp(280px, 34vw, 460px);
+  position: relative; border-radius: var(--r-lg); overflow: hidden;
+  background: var(--ink-800); isolation: isolate; min-height: 62vh;
+}
+.hpin__card img { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; transition: transform 0.9s var(--ease); }
+.hpin__card::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(9,12,16,0) 35%, rgba(9,12,16,0.92)); }
+.hpin__card:hover img { transform: scale(1.06); }
+.hpin__card .b { position: absolute; inset: auto 0 0 0; padding: 30px; color: #fff; }
+.hpin__card .cat { font-family: var(--font-display); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); }
+.hpin__card h3 { color: #fff; font-size: clamp(1.3rem,2vw,1.7rem); margin-top: 8px; }
+.hpin__card .meta { color: var(--on-dark-2); font-size: 0.9rem; margin-top: 6px; }
+.hpin__num { font-family: var(--font-display); font-size: 0.8rem; color: var(--on-dark-3); letter-spacing: 0.1em; position: absolute; top: 24px; left: 30px; z-index: 1; }
+.hpin__progress { position: absolute; left: var(--gutter); right: var(--gutter); bottom: 40px; height: 2px; background: var(--line-dark); }
+.hpin__progress span { display: block; height: 100%; width: 0; background: var(--gold); }
+/* Fallback (no JS pin / mobile): horizontal swipe scroll */
+.hpin:not(.hpin--active) .hpin__sticky { position: static; height: auto; padding-block: clamp(60px,8vw,90px); overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
+.hpin:not(.hpin--active) .hpin__card { scroll-snap-align: center; min-height: 60vh; }
+.hpin:not(.hpin--active) .hpin__progress { display: none; }
+@media (max-width: 760px) {
+  .hpin__intro { width: 78vw; }
+  .hpin__card { width: 80vw; min-height: 64vh; }
+}
+
+/* ---- Custom cursor ---- */
+.cursor { position: fixed; top: 0; left: 0; z-index: 3000; pointer-events: none; mix-blend-mode: difference; opacity: 0; transition: opacity 0.3s ease; }
+.cursor.ready { opacity: 1; }
+.cursor__dot { position: fixed; width: 7px; height: 7px; border-radius: 50%; background: #fff; transform: translate(-50%, -50%); }
+.cursor__ring { position: fixed; width: 38px; height: 38px; border: 1.5px solid #fff; border-radius: 50%; transform: translate(-50%, -50%); transition: width 0.28s var(--ease), height 0.28s var(--ease), background 0.28s ease; }
+.cursor.is-hover .cursor__ring { width: 62px; height: 62px; background: rgba(255,255,255,0.12); }
+@media (hover: none), (pointer: coarse) { .cursor { display: none; } }
