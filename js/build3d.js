@@ -179,6 +179,7 @@
   M.mulch = new THREE.MeshStandardMaterial({ color: 0x3a2716, roughness: 1 });
   M.tile  = new THREE.MeshStandardMaterial({ color: 0x2b7f96, roughness: 0.35, metalness: 0.1 });
   M.pot   = new THREE.MeshStandardMaterial({ color: 0x8d8577, roughness: 0.9 });
+  M.teak  = new THREE.MeshStandardMaterial({ color: 0xb08a52, roughness: 0.62 });
 
   /* ---- surface relief: give the finish materials real normal-mapped texture ---- */
   M.wall.normalMap = stuccoN;  M.wall.normalScale = new THREE.Vector2(0.5, 0.5);
@@ -326,7 +327,34 @@
   // slim floor-line reveal between storeys (warm grey, not a heavy dark ledge)
   reg(box(9.14, 0.18, 7.14, M.band, 0, SLAB_TOP + GF_H + 0.02, 0), 0.56, 0.66, "drop", {});
   reg(box(1.75, 0.35, 4.7, M.roof, -3.4, SLAB_TOP + 2.7 + 0.18, 4.0), 0.58, 0.68, "drop", {}); // garage roof
-  reg(box(1.7, 0.7, 1.3, M.dark, 1.6, roofY + 0.6, -1.6), 0.68, 0.77, "drop", {}); // rooftop HVAC
+
+  /* ---- rooftop terrace + mechanical scape (prominent in the top-down delivered view) ---- */
+  var deckY = roofY + 0.55; // rooftop walking surface
+  // teak terrace deck across the front half of the roof
+  reg(box(8.2, 0.1, 3.1, M.teak, 0.4, deckY, 1.25), 0.72, 0.82, "fade", { opacity: 1 });
+  // pergola: posts, beams, shade slats
+  var pgP = [[-2.4, 0.1], [1.6, 0.1], [-2.4, 2.4], [1.6, 2.4]];
+  for (var pg = 0; pg < pgP.length; pg++) reg(boxB(0.14, 1.5, 0.14, M.wood, pgP[pg][0], deckY, pgP[pg][1]), 0.74, 0.83, "growY");
+  reg(box(4.3, 0.13, 0.14, M.wood, -0.4, deckY + 1.5, 0.1), 0.79, 0.87, "fade", { opacity: 1 });
+  reg(box(4.3, 0.13, 0.14, M.wood, -0.4, deckY + 1.5, 2.4), 0.79, 0.87, "fade", { opacity: 1 });
+  for (var pgs = 0.1; pgs <= 2.45; pgs += 0.34) reg(box(4.5, 0.07, 0.06, M.wood, -0.4, deckY + 1.56, pgs), 0.80, 0.88, "fade", { opacity: 1 });
+  // flush skylights (glow at dusk)
+  reg(box(1.5, 0.09, 1.1, M.glass, 2.8, deckY + 0.01, 1.7), 0.76, 0.86, "fade", { opacity: 0.5 });
+  reg(box(1.1, 0.09, 1.1, M.glass, 3.4, deckY + 0.01, -0.4), 0.77, 0.86, "fade", { opacity: 0.5 });
+  // rooftop planters with clipped greenery
+  function roofPlanter(x, z) { var g = new THREE.Group(); g.add(box(0.66, 0.5, 0.66, M.pot, 0, deckY + 0.25, 0)); var b = new THREE.Mesh(new THREE.IcosahedronGeometry(0.44, 0), M.hedge.clone()); b.position.y = deckY + 0.68; g.add(b); g.position.set(x, 0, z); return reg(g, 0.83, 0.91, "scale"); }
+  roofPlanter(-3.0, 1.0); roofPlanter(-3.0, 2.5);
+  // mechanical cluster toward the back of the roof
+  reg(box(1.3, 0.7, 1.1, M.dark, -1.9, roofY + 0.85, -2.2), 0.69, 0.78, "drop", {}); // condenser 1
+  reg(box(1.1, 0.6, 1.0, M.dark, 0.2, roofY + 0.80, -2.5), 0.70, 0.79, "drop", {});  // condenser 2
+  reg(box(1.2, 0.65, 1.0, M.steel, 2.0, roofY + 0.83, -2.1), 0.70, 0.79, "drop", {}); // air handler
+  reg(cyl(0.34, 0.34, 0.07, M.mullion, -1.9, roofY + 1.22, -2.2, 16), 0.71, 0.80, "drop", { noshadow: true }); // fan grille
+  reg(cyl(0.3, 0.3, 0.07, M.mullion, 0.2, roofY + 1.12, -2.5, 16), 0.71, 0.80, "drop", { noshadow: true });
+  reg(box(0.4, 0.4, 2.4, M.steel, 1.1, roofY + 0.72, -3.0), 0.71, 0.80, "drop", {}); // duct run
+  // roof-access bulkhead (stair penthouse) with a coping cap
+  reg(boxB(1.8, 1.3, 1.6, M.wall2, -3.0, deckY - 0.05, -2.3), 0.68, 0.80, "growY");
+  reg(box(1.94, 0.14, 1.74, M.coping, -3.0, deckY - 0.05 + 1.3, -2.3), 0.72, 0.81, "drop", {}); // bulkhead cap
+  reg(box(0.7, 0.9, 0.06, M.door, -3.0, deckY + 0.4, -2.3 + 0.83), 0.74, 0.82, "fade", { opacity: 1 }); // access door
 
   /* ---- 05 framed glass + doors ---- */
   var frontZ = 3.56, sideX = 4.55;
