@@ -36,15 +36,15 @@
 
   /* ---- lights ---- */
   var hemi = new THREE.HemisphereLight(0xbcd6ef, 0x51603c, 0.6); scene.add(hemi);
-  var sun = new THREE.DirectionalLight(0xfff1d6, 1.2);
-  sun.position.set(10, 16, 8); sun.castShadow = true;
+  var sun = new THREE.DirectionalLight(0xfff0d0, 1.75);
+  sun.position.set(12, 11, 8); sun.castShadow = true;   // lower / more raking key for form-revealing shadows
   sun.shadow.mapSize.set(2048, 2048);
-  sun.shadow.camera.near = 1; sun.shadow.camera.far = 90;
-  sun.shadow.camera.left = -20; sun.shadow.camera.right = 20;
-  sun.shadow.camera.top = 20; sun.shadow.camera.bottom = -20;
-  sun.shadow.bias = -0.00035; sun.shadow.normalBias = 0.02;
+  sun.shadow.camera.near = 1; sun.shadow.camera.far = 80;
+  sun.shadow.camera.left = -14; sun.shadow.camera.right = 14;
+  sun.shadow.camera.top = 14; sun.shadow.camera.bottom = -14;   // tight to the building = crisp contact shadow
+  sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.02;
   scene.add(sun);
-  var fill = new THREE.DirectionalLight(0xa0c6e2 & 0xffffff, 0.22); fill.position.set(-9, 6, -7); scene.add(fill);
+  var fill = new THREE.DirectionalLight(0xa0c6e2, 0.14); fill.position.set(-9, 6, -7); scene.add(fill);
 
   /* ---- textures (procedural, self-contained) ---- */
   function cvtex(draw, rep) {
@@ -103,6 +103,7 @@
     stone:  new THREE.MeshStandardMaterial({ color: 0xcdbfa3, roughness: 0.85 }),
     roof:   new THREE.MeshStandardMaterial({ color: 0x2b323a, roughness: 0.6, metalness: 0.25 }),
     fascia: new THREE.MeshStandardMaterial({ color: 0x20262d, roughness: 0.5 }),
+    band:   new THREE.MeshStandardMaterial({ color: 0xb4ab9c, roughness: 0.82 }),
     glass:  new THREE.MeshStandardMaterial({ color: 0x9fc0d8, roughness: 0.05, metalness: 0.5, transparent: true, opacity: 0.5, emissive: 0x000000, envMapIntensity: 1.6 }),
     mullion:new THREE.MeshStandardMaterial({ color: 0x272b31, roughness: 0.5, metalness: 0.4 }),
     door:   new THREE.MeshStandardMaterial({ color: 0x5c3f24, roughness: 0.5 }),
@@ -251,39 +252,42 @@
   reg(box(8.9, 0.35, 0.18, M.fascia, 0.4, roofY + 0.55, -0.3 - 3.3), 0.62, 0.7, "drop", {});
   reg(box(0.18, 0.35, 6.7, M.fascia, 0.4 + 4.35, roofY + 0.55, -0.3), 0.62, 0.7, "drop", {});
   reg(box(0.18, 0.35, 6.7, M.fascia, 0.4 - 4.35, roofY + 0.55, -0.3), 0.62, 0.7, "drop", {});
-  // ground-floor flat roof / terrace deck over the setback
-  reg(box(9.2, 0.35, 7.2, M.fascia, 0, SLAB_TOP + GF_H + 0.05, 0), 0.56, 0.66, "drop", {});
+  // slim floor-line reveal between storeys (warm grey, not a heavy dark ledge)
+  reg(box(9.14, 0.18, 7.14, M.band, 0, SLAB_TOP + GF_H + 0.02, 0), 0.56, 0.66, "drop", {});
   reg(box(1.75, 0.35, 4.7, M.roof, -3.4, SLAB_TOP + 2.7 + 0.18, 4.0), 0.58, 0.68, "drop", {}); // garage roof
   reg(box(1.7, 0.7, 1.3, M.dark, 1.6, roofY + 0.6, -1.6), 0.68, 0.77, "drop", {}); // rooftop HVAC
 
   /* ---- 05 framed glass + doors ---- */
   var frontZ = 3.56, sideX = 4.55;
+  // Large single-pane windows: slim frame, glass recessed behind the wall face,
+  // one thin vertical mullion only (no colonial grid).
   function addWin(w, h, x, y, z, face, t0, t1) {
     if (face === "front") {
-      reg(box(w + 0.18, h + 0.18, 0.05, M.mullion, x, y, z - 0.03), t0, t1, "fade", { opacity: 1 });
-      reg(box(w, h, 0.08, M.glass, x, y, z), t0 + 0.01, t1 + 0.01, "fade", { opacity: 0.5 });
-      reg(box(0.05, h, 0.11, M.mullion, x, y, z + 0.01), t0 + 0.02, t1 + 0.02, "fade", { opacity: 1 });
-      reg(box(w, 0.05, 0.11, M.mullion, x, y, z + 0.01), t0 + 0.02, t1 + 0.02, "fade", { opacity: 1 });
+      reg(box(w + 0.14, h + 0.14, 0.06, M.mullion, x, y, z - 0.02), t0, t1, "fade", { opacity: 1 });      // slim frame
+      reg(box(w, h, 0.05, M.glass, x, y, z - 0.14), t0 + 0.01, t1 + 0.01, "fade", { opacity: 0.5 });        // recessed pane
+      reg(box(0.045, h, 0.09, M.mullion, x, y, z - 0.05), t0 + 0.02, t1 + 0.02, "fade", { opacity: 1 });    // single vertical mullion
     } else {
-      reg(box(0.05, h + 0.18, w + 0.18, M.mullion, x + 0.03, y, z), t0, t1, "fade", { opacity: 1 });
-      reg(box(0.08, h, w, M.glass, x, y, z), t0 + 0.01, t1 + 0.01, "fade", { opacity: 0.5 });
-      reg(box(0.11, h, 0.05, M.mullion, x - 0.01, y, z), t0 + 0.02, t1 + 0.02, "fade", { opacity: 1 });
-      reg(box(0.11, 0.05, w, M.mullion, x - 0.01, y, z), t0 + 0.02, t1 + 0.02, "fade", { opacity: 1 });
+      reg(box(0.06, h + 0.14, w + 0.14, M.mullion, x + 0.02, y, z), t0, t1, "fade", { opacity: 1 });
+      reg(box(0.05, h, w, M.glass, x - 0.14, y, z), t0 + 0.01, t1 + 0.01, "fade", { opacity: 0.5 });
+      reg(box(0.09, h, 0.045, M.mullion, x - 0.05, y, z), t0 + 0.02, t1 + 0.02, "fade", { opacity: 1 });
     }
   }
-  addWin(3.2, 2.2, 1.5, SLAB_TOP + 1.4, frontZ, "front", 0.70, 0.80);
-  addWin(1.3, 2.2, -2.0, SLAB_TOP + 1.4, frontZ, "front", 0.71, 0.81);
-  addWin(1.4, 1.6, -1.9, SLAB_TOP + GF_H + 1.5, frontZ - 0.3, "front", 0.74, 0.84);
-  addWin(1.4, 1.6, 0.5, SLAB_TOP + GF_H + 1.5, frontZ - 0.3, "front", 0.75, 0.85);
-  addWin(1.4, 1.6, 2.7, SLAB_TOP + GF_H + 1.5, frontZ - 0.3, "front", 0.76, 0.86);
-  addWin(3.2, 2.0, sideX, SLAB_TOP + 1.4, -0.6, "side", 0.74, 0.84);
-  addWin(3.0, 1.5, sideX - 0.05, SLAB_TOP + GF_H + 1.4, -0.9, "side", 0.78, 0.88);
+  // ground floor: picture window + entry-side window (aligned to columns)
+  addWin(3.2, 2.3, 1.5, SLAB_TOP + 1.45, frontZ, "front", 0.70, 0.80);
+  addWin(1.3, 2.3, -2.0, SLAB_TOP + 1.45, frontZ, "front", 0.71, 0.81);
+  // upper floor: three windows stacked directly above the openings below
+  addWin(1.3, 1.7, -2.0, SLAB_TOP + GF_H + 1.55, frontZ - 0.3, "front", 0.74, 0.84);
+  addWin(1.4, 1.7, 0.6, SLAB_TOP + GF_H + 1.55, frontZ - 0.3, "front", 0.75, 0.85);
+  addWin(1.4, 1.7, 2.6, SLAB_TOP + GF_H + 1.55, frontZ - 0.3, "front", 0.76, 0.86);
+  addWin(3.2, 2.1, sideX, SLAB_TOP + 1.45, -0.6, "side", 0.74, 0.84);
+  addWin(3.0, 1.6, sideX - 0.05, SLAB_TOP + GF_H + 1.5, -0.6, "side", 0.78, 0.88);
 
-  /* ---- entry: recessed door, canopy, steps, sidelight ---- */
-  reg(box(1.1, 2.4, 0.16, M.door, -0.3, SLAB_TOP + 1.2, frontZ - 0.05), 0.72, 0.8, "fade", { opacity: 1 });
-  reg(box(0.08, 2.0, 0.14, M.steel, -0.85, SLAB_TOP + 1.1, frontZ), 0.73, 0.81, "fade", { opacity: 1 }); // door handle post
-  reg(box(0.35, 2.3, 0.1, M.glass, 0.45, SLAB_TOP + 1.35, frontZ), 0.73, 0.82, "fade", { opacity: 0.5 }); // sidelight
-  reg(box(2.6, 0.16, 1.1, M.fascia, -0.3, SLAB_TOP + 2.5, frontZ + 0.5), 0.73, 0.82, "drop", {}); // canopy
+  /* ---- entry: tall pivot door in a recessed portal, canopy, steps, sidelight ---- */
+  reg(box(1.9, 3.0, 0.1, M.mullion, -0.3, SLAB_TOP + 1.5, frontZ - 0.1), 0.71, 0.79, "fade", { opacity: 1 }); // portal reveal
+  reg(box(1.35, 2.75, 0.16, M.door, -0.3, SLAB_TOP + 1.35, frontZ - 0.02), 0.72, 0.8, "fade", { opacity: 1 }); // door slab
+  reg(box(0.07, 1.5, 0.13, M.steel, -0.78, SLAB_TOP + 1.35, frontZ + 0.03), 0.73, 0.81, "fade", { opacity: 1 }); // vertical pull handle
+  reg(box(0.34, 2.5, 0.08, M.glass, 0.5, SLAB_TOP + 1.45, frontZ - 0.06), 0.73, 0.82, "fade", { opacity: 0.5 }); // sidelight
+  reg(box(2.8, 0.16, 1.2, M.fascia, -0.3, SLAB_TOP + 3.0, frontZ + 0.5), 0.73, 0.82, "drop", {}); // canopy
   reg(box(2.2, 0.16, 0.7, M.stone, -0.3, 0.16, frontZ + 0.9), 0.78, 0.86, "fade", { opacity: 1 }); // step 1
   reg(box(1.7, 0.16, 0.5, M.stone, -0.3, 0.32, frontZ + 0.6), 0.79, 0.87, "fade", { opacity: 1 }); // step 2
   // garage door with slats
@@ -384,14 +388,16 @@
     for (var k = 0; k < frameParts.length; k++) { var fm = frameParts[k]; fm.material.opacity = (fm.userData.mode === "fade" ? fm.material.opacity : 1) * fo; if (fm.material.opacity < 0.02) fm.visible = false; }
     // grid + contact shadow
     grid.material.opacity = clamp(1 - (p - 0.04) / 0.16, 0, 1) * 0.9; grid.visible = grid.material.opacity > 0.01;
-    contact.material.opacity = clamp((p - 0.4) / 0.2, 0, 1) * 0.22;
+    contact.material.opacity = clamp((p - 0.4) / 0.2, 0, 1) * 0.1;
     // golden hour + lights
     var e2 = clamp((p - 0.84) / 0.16, 0, 1);
-    sun.position.set(lerp(10, 3.5, e2), lerp(16, 5.5, e2), lerp(8, 9, e2));
-    sun.color.setHSL(lerp(0.12, 0.07, e2), 0.55, lerp(0.92, 0.72, e2));
-    sun.intensity = lerp(1.2, 0.85, e2);
-    hemi.intensity = lerp(0.6, 0.38, e2);
-    for (var g = 0; g < glassMeshes.length; g++) { glassMeshes[g].material.emissive.setHex(0xffb457); glassMeshes[g].material.emissiveIntensity = e2 * 1.2; }
+    sun.position.set(lerp(12, 3.2, e2), lerp(11, 4.5, e2), lerp(8, 9, e2));
+    sun.color.setHSL(lerp(0.11, 0.055, e2), 0.6, lerp(0.9, 0.68, e2));
+    sun.intensity = lerp(1.75, 1.0, e2);
+    hemi.intensity = lerp(0.45, 0.32, e2);
+    // glass: cool sky-tint by day (never pure-black voids on weak GPUs) → warm interior glow at dusk
+    var geHex = e2 < 0.5 ? 0x2c4159 : 0xffb457;
+    for (var g = 0; g < glassMeshes.length; g++) { glassMeshes[g].material.emissive.setHex(geHex); glassMeshes[g].material.emissiveIntensity = lerp(0.42, 1.95, e2); }
     for (var li = 0; li < lights.length; li++) lights[li].material.emissiveIntensity = e2 * 2.2;
     stars.material.opacity = e2 * 0.9; stars.visible = e2 > 0.02;
     var wantDusk = e2 > 0.45;
