@@ -165,6 +165,42 @@
       <div class="scroll-cue"><span>Scroll</span><span class="bar"></span></div>
     </section>
 
+    <!-- ============ TRANSFORMATION — scroll: land → structure → home ============ -->
+    <section class="xform" id="build" aria-label="From raw land to finished build">
+      <div class="xform__sticky">
+        <div class="xform__canvas"><canvas id="build-canvas"></canvas></div>
+        <img class="xform__fallback" src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1900&q=72" alt="Finished luxury home built by DK3 Construction" loading="lazy" />
+        <div class="xform__scrim"></div>
+
+        <div class="container xform__ui">
+          <div class="xform__top">
+            <span class="xform__brand"><span class="d"></span> DK3 · Design‑Build</span>
+            <span class="xform__est">26.12°N · 80.14°W</span>
+          </div>
+
+          <ul class="xform__index" aria-hidden="true">
+            <li data-i="0" class="active">Land</li>
+            <li data-i="1">Structure</li>
+            <li data-i="2">Delivered</li>
+          </ul>
+
+          <div class="xform__center">
+            <span class="xform__cap">Watch it come together</span>
+            <div class="xform__lines">
+              <h2 class="xform__line active" data-i="0">It starts with <em>raw ground.</em></h2>
+              <h2 class="xform__line" data-i="1">Structure, <em>made permanent.</em></h2>
+              <h2 class="xform__line" data-i="2">Delivered to <em>the last detail.</em></h2>
+            </div>
+          </div>
+
+          <div class="xform__foot">
+            <div class="xform__progress"><span></span></div>
+            <div class="xform__pct-wrap"><span class="xform__pct" data-build-pct>0</span><span class="xform__pctlbl">%</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ============ MARQUEE ============ -->
     <div class="marquee" aria-hidden="true">
       <div class="marquee__track">
@@ -294,42 +330,6 @@
           <a href="services.html" class="btn btn--dark btn--lg">Explore all services
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
           </a>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============ TRANSFORMATION — scroll: land → structure → home ============ -->
-    <section class="xform" id="build" aria-label="From raw land to finished build">
-      <div class="xform__sticky">
-        <div class="xform__canvas"><canvas id="build-canvas"></canvas></div>
-        <img class="xform__fallback" src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1900&q=72" alt="Finished luxury home built by DK3 Construction" loading="lazy" />
-        <div class="xform__scrim"></div>
-
-        <div class="container xform__ui">
-          <div class="xform__top">
-            <span class="xform__brand"><span class="d"></span> DK3 · Design‑Build</span>
-            <span class="xform__est">26.12°N · 80.14°W</span>
-          </div>
-
-          <ul class="xform__index" aria-hidden="true">
-            <li data-i="0" class="active">Land</li>
-            <li data-i="1">Structure</li>
-            <li data-i="2">Delivered</li>
-          </ul>
-
-          <div class="xform__center">
-            <span class="xform__cap">Watch it come together</span>
-            <div class="xform__lines">
-              <h2 class="xform__line active" data-i="0">It starts with <em>raw ground.</em></h2>
-              <h2 class="xform__line" data-i="1">Structure, <em>made permanent.</em></h2>
-              <h2 class="xform__line" data-i="2">Delivered to <em>the last detail.</em></h2>
-            </div>
-          </div>
-
-          <div class="xform__foot">
-            <div class="xform__progress"><span></span></div>
-            <div class="xform__pct-wrap"><span class="xform__pct" data-build-pct>0</span><span class="xform__pctlbl">%</span></div>
-          </div>
         </div>
       </div>
     </section>
