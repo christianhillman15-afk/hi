@@ -35,8 +35,8 @@
   var camera = new THREE.PerspectiveCamera(40, 1, 0.1, 260);
 
   /* ---- lights ---- */
-  var hemi = new THREE.HemisphereLight(0xbcd6ef, 0x51603c, 0.6); scene.add(hemi);
-  var sun = new THREE.DirectionalLight(0xfff0d0, 1.75);
+  var hemi = new THREE.HemisphereLight(0xbcd6ef, 0x51603c, 0.42); scene.add(hemi); // less flat fill = more dimensional form
+  var sun = new THREE.DirectionalLight(0xffefce, 1.95);
   sun.position.set(12, 11, 8); sun.castShadow = true;   // lower / more raking key for form-revealing shadows
   sun.shadow.mapSize.set(2048, 2048);
   sun.shadow.camera.near = 1; sun.shadow.camera.far = 80;
@@ -141,7 +141,7 @@
   var skyDay = skyTex("#8fbce6", "#cfe3f0", "#eef1ea", "rgba(255,251,236,0.95)", 0.62, 0.26, true);
   var skyDusk = skyTex("#111a38", "#4a3a63", "#f0894b", "rgba(255,150,80,0.98)", 0.70, 0.44, false);
   scene.background = skyDay; scene.environment = skyDay;
-  scene.fog = new THREE.Fog(0xcfdae0, 50, 135);
+  scene.fog = new THREE.Fog(0xcfdae0, 42, 128); // atmospheric recession behind the build
   var starPos = [];
   for (var st = 0; st < 150; st++) starPos.push((rand() - 0.5) * 200, 34 + rand() * 60, -60 - rand() * 60);
   var starGeo = new THREE.BufferGeometry();
@@ -519,10 +519,11 @@
 
   /* ---- per-part update ---- */
   function applyPart(m, p) {
-    var u = m.userData, e = easeOut(clamp((p - u.t0) / (u.t1 - u.t0), 0, 1));
+    // easeInOut = weighty, physical settle (not a snappy pop)
+    var u = m.userData, e = easeInOut(clamp((p - u.t0) / (u.t1 - u.t0), 0, 1));
     if (u.mode === "growY") { m.scale.y = Math.max(0.0001, e); m.visible = e > 0.002; }
     else if (u.mode === "scale") { var s = Math.max(0.0001, e); m.scale.set(u.fs.x * s, u.fs.y * s, u.fs.z * s); m.visible = e > 0.002; }
-    else if (u.mode === "drop") { m.position.y = u.fy + (1 - e) * 7; m.visible = e > 0.002; if (m.material) { m.material.transparent = true; m.material.opacity = clamp(e * 1.6, 0, 1); } }
+    else if (u.mode === "drop") { m.position.y = u.fy + (1 - e) * 2.0; m.visible = e > 0.002; if (m.material) { m.material.transparent = true; m.material.opacity = clamp(e * 2.2, 0, 1); } }
     else if (u.mode === "fade") { m.material.opacity = e * u.op; m.visible = e > 0.002; }
   }
   function applyTemp(grp, p) {
@@ -534,8 +535,10 @@
 
   var target = new THREE.Vector3(0, 3.2, 0);
   function setCamera(p) {
-    var az = lerp(-0.66, 0.4, easeInOut(p));
-    var rad = lerp(31, 22, p), hgt = lerp(7, 12.5, easeInOut(p));
+    // a calm, restrained architectural pan — not a swooping game camera
+    var e = easeInOut(p);
+    var az = lerp(-0.46, 0.14, e);
+    var rad = lerp(29, 24, e), hgt = lerp(8.2, 11, e);
     camera.position.set(Math.sin(az) * rad, hgt, Math.cos(az) * rad);
     camera.lookAt(target);
   }
@@ -555,8 +558,8 @@
     var e2 = clamp((p - 0.84) / 0.16, 0, 1);
     sun.position.set(lerp(12, 3.2, e2), lerp(11, 4.5, e2), lerp(8, 9, e2));
     sun.color.setHSL(lerp(0.11, 0.055, e2), 0.6, lerp(0.9, 0.68, e2));
-    sun.intensity = lerp(1.75, 1.0, e2);
-    hemi.intensity = lerp(0.45, 0.32, e2);
+    sun.intensity = lerp(1.95, 1.05, e2);
+    hemi.intensity = lerp(0.42, 0.30, e2);
     // glass: reflective cool sky-tint by day → solid, warmly-lit interior at dusk
     var geHex = e2 < 0.5 ? 0x2c4159 : 0xffb457;
     for (var g = 0; g < glassMeshes.length; g++) {
