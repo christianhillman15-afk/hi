@@ -9,6 +9,7 @@
    ============================================================= */
 (function () {
   "use strict";
+  if (window.__dk3SeqActive) return;   // a pre-rendered sequence is driving the build — stand down
   if (!window.THREE) return;
   var canvas = document.getElementById("build-canvas");
   if (!canvas) return;
