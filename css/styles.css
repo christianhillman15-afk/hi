@@ -1592,8 +1592,8 @@ body.intro-active { overflow: hidden; }
 
 /* magnetic + tilt elements follow the pointer, then ease home on leave */
 .magnetic { will-change: transform; }
-.card.is-tilting, .tile.is-tilting { transition: transform 0.1s linear !important; }
-.card, .tile { transform-style: preserve-3d; }
+.tile.is-tilting { transition: transform 0.1s linear !important; }
+.tile { transform-style: preserve-3d; }
 
 @media (prefers-reduced-motion: reduce) {
   .scroll-progress { display: none; }

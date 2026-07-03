@@ -446,17 +446,15 @@
     });
   }
 
-  /* ---------- Pointer tilt on cards & project tiles ---------- */
+  /* ---------- Pointer tilt on project image tiles ---------- */
   if (finePointer && !reduceMotion) {
-    $all(".card, .tile").forEach(function (el) {
-      var isTile = el.classList.contains("tile");
-      var maxT = isTile ? 3.4 : 5, lift = isTile ? 0 : -6;
+    $all(".tile").forEach(function (el) {
       el.addEventListener("mouseenter", function () { el.classList.add("is-tilting"); });
       el.addEventListener("mousemove", function (e) {
         var b = el.getBoundingClientRect();
-        var rx = (-((e.clientY - b.top) / b.height - 0.5) * maxT).toFixed(2);
-        var ry = (((e.clientX - b.left) / b.width - 0.5) * maxT).toFixed(2);
-        el.style.transform = "perspective(760px) rotateX(" + rx + "deg) rotateY(" + ry + "deg) translateY(" + lift + "px)";
+        var rx = (-((e.clientY - b.top) / b.height - 0.5) * 3.4).toFixed(2);
+        var ry = (((e.clientX - b.left) / b.width - 0.5) * 3.4).toFixed(2);
+        el.style.transform = "perspective(760px) rotateX(" + rx + "deg) rotateY(" + ry + "deg)";
       });
       el.addEventListener("mouseleave", function () { el.classList.remove("is-tilting"); el.style.transform = ""; });
     });
