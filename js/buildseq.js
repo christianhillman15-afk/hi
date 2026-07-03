@@ -20,13 +20,15 @@
   /* ---------------- CONFIG — edit this block ---------------- */
   var SEQ = {
     enabled: false,                    // ← flip to true once frames/video are in place
-    // -- image-sequence mode (preferred: smoothest scrub) --
+    // -- image-sequence / stills mode --
     path:   "assets/build-sequence/",
     prefix: "frame_",
     pad:    4,                         // frame_0001.jpg
     ext:    "jpg",
     first:  1,
-    count:  120,                       // total number of rendered frames
+    count:  5,                         // number of stills (AI images) OR rendered frames
+    crossfade: true,                   // true = silky dissolve between a few AI stills;
+                                       // false = hard-scrub many rendered frames (video-like)
     // -- OR video mode (leave "" to use the image sequence above) --
     video:  ""                         // e.g. "assets/build-sequence/build.mp4"
   };
@@ -51,14 +53,15 @@
     if (!w || !h) return;
     canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
   }
-  function drawCover(src) {
+  function drawCover(src, alpha) {
     if (!src) return;
     var iw = src.naturalWidth || src.videoWidth, ih = src.naturalHeight || src.videoHeight;
     if (!iw || !ih) return;
     var cw = canvas.width, ch = canvas.height;
     var s = Math.max(cw / iw, ch / ih), w = iw * s, h = ih * s;
-    ctx.clearRect(0, 0, cw, ch);
+    ctx.globalAlpha = (alpha == null ? 1 : alpha);
     ctx.drawImage(src, (cw - w) / 2, (ch - h) / 2, w, h);
+    ctx.globalAlpha = 1;
   }
 
   /* ---- optional loading indicator in the xform UI ---- */
@@ -124,9 +127,18 @@
   }
   function render(p) {
     lastP = p = clamp(p, 0, 1);
-    var idx = Math.round(p * (SEQ.count - 1));
-    var img = nearestLoaded(idx);
-    if (img) drawCover(img);
+    var cw = canvas.width, ch = canvas.height;
+    if (SEQ.crossfade && SEQ.count > 1) {
+      // silky dissolve between the two nearest stills
+      var fpos = p * (SEQ.count - 1), i = Math.floor(fpos), f = fpos - i;
+      var a = nearestLoaded(i), bb = nearestLoaded(Math.min(i + 1, SEQ.count - 1));
+      ctx.clearRect(0, 0, cw, ch);
+      if (a) drawCover(a, 1);
+      if (bb && bb !== a && f > 0.001) drawCover(bb, f < 1 ? f : 1);
+    } else {
+      var img = nearestLoaded(Math.round(p * (SEQ.count - 1)));
+      if (img) { ctx.clearRect(0, 0, cw, ch); drawCover(img, 1); }
+    }
   }
 
   sizeCanvas();
