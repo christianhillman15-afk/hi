@@ -131,7 +131,13 @@
   var lenis = null;
   if (!reduceMotion && finePointer && typeof window.Lenis === "function") {
     try {
-      lenis = new window.Lenis({ duration: 1.1, smoothWheel: true, lerp: 0.1 });
+      lenis = new window.Lenis({
+        lerp: 0.085,                 // buttery, slightly weighted glide
+        smoothWheel: true,
+        wheelMultiplier: 1,
+        easing: function (t) { return Math.min(1, 1.001 - Math.pow(2, -10 * t)); },
+        syncTouch: false             // native touch scroll on mobile (feels best)
+      });
       var raf = function (t) { lenis.raf(t); requestAnimationFrame(raf); };
       requestAnimationFrame(raf);
       // anchor links through Lenis
@@ -199,6 +205,7 @@
   var xIndex = xform ? $all(".xform__index li", xform) : [];
   var xPct = xform ? $("[data-build-pct]", xform) : null;
   var xBar = xform ? $(".xform__progress span", xform) : null;
+  var xCue = xform ? $(".scroll-cue", xform) : null;
   var lastIdx = -1;
 
   function updateBuild() {
@@ -216,6 +223,7 @@
     }
     if (xPct) xPct.textContent = Math.round(p * 100);
     if (xBar) xBar.style.width = (p * 100).toFixed(1) + "%";
+    if (xCue) xCue.style.opacity = clamp(1 - p * 6, 0, 1); // fade the "scroll to build" hint as it starts
   }
 
   function setupHpin() {

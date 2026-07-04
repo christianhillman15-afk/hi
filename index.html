@@ -126,47 +126,8 @@
   </div>
 
   <main>
-    <!-- ============ HERO ============ -->
-    <section class="hero">
-      <div class="hero__media" data-parallax="0.08" style="top:-14%;height:128%">
-        <img src="https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=2000&q=75" alt="Luxury South Florida home with pool at dusk built by DK3 Construction" fetchpriority="high" />
-      </div>
-      <div class="hero__overlay"></div>
-      <div class="container hero__inner">
-        <span class="hero__eyebrow"><span class="dot"></span> Licensed &amp; Insured · <b>Fort Lauderdale, FL</b></span>
-        <h1 class="display split-text">Ground&#8209;up to grand finish, built <em>without compromise.</em></h1>
-        <p class="hero__lead">DK3 Construction is a licensed Fort Lauderdale general contractor delivering luxury residential and commercial projects — from site excavation and earthmoving to design‑build and the final finish.</p>
-        <div class="hero__cta">
-          <a href="contact.html" class="btn btn--lg">Start Your Project
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-          </a>
-          <a href="projects.html" class="btn btn--lg btn--ghost on-dark">View Our Work</a>
-        </div>
-
-        <div class="hero__stats">
-          <div class="hero__stat">
-            <div class="n"><span data-count="5.0" data-decimals="1">5.0</span><span class="u">★</span></div>
-            <div class="l">Average client rating</div>
-          </div>
-          <div class="hero__stat">
-            <div class="n"><span data-count="11">11</span><span class="u">+</span></div>
-            <div class="l">Hotel &amp; hospitality builds</div>
-          </div>
-          <div class="hero__stat">
-            <div class="n"><span data-count="30">30</span> <span class="u">mi</span></div>
-            <div class="l">Service radius</div>
-          </div>
-          <div class="hero__stat">
-            <div class="n"><span data-count="100">100</span><span class="u">%</span></div>
-            <div class="l">Licensed &amp; insured</div>
-          </div>
-        </div>
-      </div>
-      <div class="scroll-cue"><span>Scroll</span><span class="bar"></span></div>
-    </section>
-
-    <!-- ============ TRANSFORMATION — scroll: land → structure → home ============ -->
-    <section class="xform" id="build" aria-label="From raw land to finished build">
+    <!-- ============ OPENING — scroll-scrubbed build: land → structure → delivered ============ -->
+    <section class="xform" id="build" aria-label="Watch a DK3 home built from raw land to finished home">
       <div class="xform__sticky">
         <div class="xform__canvas"><canvas id="build-canvas"></canvas></div>
         <img class="xform__fallback" src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1900&q=72" alt="Finished luxury home built by DK3 Construction" loading="lazy" />
@@ -196,6 +157,45 @@
           <div class="xform__foot">
             <div class="xform__progress"><span></span></div>
             <div class="xform__pct-wrap"><span class="xform__pct" data-build-pct>0</span><span class="xform__pctlbl">%</span></div>
+          </div>
+        </div>
+        <div class="scroll-cue"><span>Scroll to build</span><span class="bar"></span></div>
+      </div>
+    </section>
+
+    <!-- ============ HERO — the pitch, arrived-at after the build ============ -->
+    <section class="hero">
+      <div class="hero__media" data-parallax="0.08" style="top:-14%;height:128%">
+        <img src="https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=2000&q=75" alt="Luxury South Florida home with pool at dusk built by DK3 Construction" loading="lazy" />
+      </div>
+      <div class="hero__overlay"></div>
+      <div class="container hero__inner">
+        <span class="hero__eyebrow"><span class="dot"></span> Licensed &amp; Insured · <b>Fort Lauderdale, FL</b></span>
+        <h1 class="display split-text">Ground&#8209;up to grand finish, built <em>without compromise.</em></h1>
+        <p class="hero__lead">DK3 Construction is a licensed Fort Lauderdale general contractor delivering luxury residential and commercial projects — from site excavation and earthmoving to design‑build and the final finish.</p>
+        <div class="hero__cta">
+          <a href="contact.html" class="btn btn--lg">Start Your Project
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+          <a href="projects.html" class="btn btn--lg btn--ghost on-dark">View Our Work</a>
+        </div>
+
+        <div class="hero__stats">
+          <div class="hero__stat">
+            <div class="n"><span data-count="5.0" data-decimals="1">5.0</span><span class="u">★</span></div>
+            <div class="l">Average client rating</div>
+          </div>
+          <div class="hero__stat">
+            <div class="n"><span data-count="11">11</span><span class="u">+</span></div>
+            <div class="l">Hotel &amp; hospitality builds</div>
+          </div>
+          <div class="hero__stat">
+            <div class="n"><span data-count="30">30</span> <span class="u">mi</span></div>
+            <div class="l">Service radius</div>
+          </div>
+          <div class="hero__stat">
+            <div class="n"><span data-count="100">100</span><span class="u">%</span></div>
+            <div class="l">Licensed &amp; insured</div>
           </div>
         </div>
       </div>
@@ -605,7 +605,7 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
   </button>
 
-  <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.20/dist/lenis.min.js" defer></script>
+  <script src="js/vendor/lenis.min.js" defer></script>
   <script src="js/vendor/three.min.js" defer></script>
   <script src="js/buildseq.js" defer></script>
   <script src="js/build3d.js" defer></script>

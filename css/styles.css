@@ -1634,3 +1634,12 @@ body.is-leaving { opacity: 0; }
   font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.14em;
   text-transform: uppercase; color: rgba(255,255,255,0.72);
 }
+
+/* =============================================================
+   28 · Lenis smooth scroll — recommended rules for flawless behavior
+   ============================================================= */
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
+.lenis.lenis-stopped { overflow: hidden; }
+.lenis.lenis-smooth iframe { pointer-events: none; }
