@@ -233,6 +233,71 @@
   var grid = new THREE.GridHelper(15, 15, 0x74d4e2, 0x2f7f8c);
   grid.position.y = 0.05; grid.material.transparent = true; grid.material.opacity = 0.9; scene.add(grid);
 
+  /* ============================================================
+     ENVIRONMENT — waterfront neighborhood, skyline across the bay,
+     clouds and a sun. Permanent backdrop so the build has a world.
+     ============================================================ */
+  var matWater = new THREE.MeshStandardMaterial({ color: 0x2f6d92, roughness: 0.07, metalness: 0.6, envMapIntensity: 1.3, emissive: 0x000000 });
+  var matCloud = new THREE.MeshStandardMaterial({ color: 0xeef3f9, roughness: 1, transparent: true, opacity: 0.9, emissive: 0xdfe8f2, emissiveIntensity: 0.1, depthWrite: false });
+  var matRoad  = new THREE.MeshStandardMaterial({ color: 0x2c2e33, roughness: 0.92 });
+  var matNRoofA = new THREE.MeshStandardMaterial({ color: 0x39404a, roughness: 0.7, metalness: 0.15 });
+  var matNRoofB = new THREE.MeshStandardMaterial({ color: 0x6b5140, roughness: 0.85 });
+  var matNWallA = new THREE.MeshStandardMaterial({ color: 0xe9e3d6, roughness: 0.92 });
+  var matNWallB = new THREE.MeshStandardMaterial({ color: 0xd2cabb, roughness: 0.92 });
+  var matSky   = new THREE.MeshStandardMaterial({ color: 0x8391a3, roughness: 0.9, emissive: 0xffb060, emissiveIntensity: 0 });
+  var matWin   = new THREE.MeshStandardMaterial({ color: 0xffe6b0, emissive: 0xffcf8a, emissiveIntensity: 0, roughness: 0.5, metalness: 0.1 });
+
+  var env = new THREE.Group(); scene.add(env);
+  function E(m) { m.castShadow = false; m.receiveShadow = false; env.add(m); return m; }
+  function ebox(w, h, d, mat, x, y, z) { var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); return E(m); }
+
+  // the view: bay water (only behind the seawall) + shoreline
+  var water = new THREE.Mesh(new THREE.PlaneGeometry(760, 320), matWater);
+  water.rotation.x = -Math.PI / 2; water.position.set(0, 0.05, -182); E(water);
+  ebox(240, 0.8, 1.4, M.concrete, 0, 0.35, -22);                         // seawall masks the grass/water seam
+  for (var tl = -120; tl <= 120; tl += 8.5) ebox(6 + rand() * 4, 2.6 + rand() * 3, 3, M.hedge, tl + (rand() - 0.5) * 4, 1.3, -27 - rand() * 4); // shoreline trees
+  // distant skyline rising across the bay
+  for (var sb = 0; sb < 30; sb++) { var bh = 5 + Math.pow(rand(), 2.2) * 34; ebox(3 + rand() * 3.5, bh, 3 + rand() * 3, matSky, -108 + sb * 7.3 + (rand() - 0.5) * 3, bh / 2, -116 - rand() * 22); }
+
+  // neighborhood homes flanking + behind the lot
+  function nHouse(x, z, ry, s, wallMat, roofMat) {
+    var g = new THREE.Group();
+    function b(w, h, d, mat, px, py, pz) { var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(px, py, pz); g.add(m); return m; }
+    var bw = 6, bd = 5, gh = 3.0, uh = 2.5;
+    b(bw, gh, bd, wallMat, 0, gh / 2, 0);                                  // ground floor
+    b(bw * 0.72, uh, bd * 0.82, wallMat, -bw * 0.12, gh + uh / 2, -0.2);   // upper setback
+    b(bw + 0.4, 0.34, bd + 0.4, roofMat, 0, gh + 0.17, 0);                 // floor band
+    b(bw * 0.72 + 0.4, 0.34, bd * 0.82 + 0.4, roofMat, -bw * 0.12, gh + uh + 0.17, -0.2); // roof cap
+    b(2.6, 2.2, 3, wallMat, bw * 0.5 + 1.0, 1.1, bd * 0.1);                // garage wing
+    b(1.7, 1.3, 0.1, matWin, 0.7, gh * 0.52, bd / 2 + 0.02);               // windows (glow at dusk)
+    b(1.4, 1.1, 0.1, matWin, -bw * 0.12, gh + uh * 0.5, bd * 0.42 + 0.02);
+    b(1.2, 1.2, 0.1, matWin, -1.9, gh * 0.52, bd / 2 + 0.02);
+    b(0.3, 4, 0.3, M.palm, bw * 0.5 + 0.4, 2, -bd * 0.3);                  // palm
+    var crown = new THREE.Mesh(new THREE.IcosahedronGeometry(1.3, 0), M.frond); crown.position.set(bw * 0.5 + 0.4, 4.2, -bd * 0.3); g.add(crown);
+    g.position.set(x, 0, z); g.rotation.y = ry; g.scale.setScalar(s);
+    g.traverse(function (o) { if (o.isMesh) { o.castShadow = false; o.receiveShadow = false; } });
+    env.add(g); return g;
+  }
+  nHouse(-20, -3, 0.5, 1.15, matNWallA, matNRoofA); nHouse(-25, 8, 0.25, 1.0, matNWallB, matNRoofB);
+  nHouse(20, -2, -0.5, 1.2, matNWallB, matNRoofA); nHouse(25, 9, -0.25, 1.05, matNWallA, matNRoofB);
+  nHouse(-13, -16, 0.12, 1.0, matNWallA, matNRoofA); nHouse(9, -16, -0.12, 1.1, matNWallB, matNRoofB); nHouse(-2, -18, 0, 0.95, matNWallA, matNRoofA);
+
+  // the street the house faces
+  var road = new THREE.Mesh(new THREE.PlaneGeometry(240, 6), matRoad); road.rotation.x = -Math.PI / 2; road.position.set(0, 0.02, 14.5); E(road);
+  for (var dl = -116; dl <= 116; dl += 6) ebox(2.2, 0.03, 0.18, M.concrete, dl, 0.045, 14.5); // centre line
+
+  // clouds
+  function cloud(x, y, z, s) { var g = new THREE.Group(); var n = 5 + ((rand() * 3) | 0); for (var i = 0; i < n; i++) { var r = (2.4 + rand() * 2.6) * s; var pf = new THREE.Mesh(new THREE.SphereGeometry(r, 8, 6), matCloud); pf.position.set((rand() - 0.5) * 6 * s, (rand() - 0.5) * 1.4 * s, (rand() - 0.5) * 3 * s); pf.scale.y = 0.55; pf.castShadow = pf.receiveShadow = false; g.add(pf); } g.position.set(x, y, z); env.add(g); return g; }
+  cloud(-42, 46, -60, 2.2); cloud(35, 52, -82, 2.8); cloud(-72, 58, -112, 3.2); cloud(60, 44, -52, 2.0); cloud(2, 62, -132, 3.6); cloud(-20, 50, -96, 2.4); cloud(86, 55, -104, 2.6);
+  // low clouds hugging the horizon over the bay (visible in the pulled-back view)
+  cloud(-55, 22, -120, 2.6); cloud(28, 19, -135, 3.0); cloud(78, 24, -128, 2.4); cloud(-5, 17, -150, 3.4);
+
+  // sun disk + soft glow (sits in the sky the camera looks toward)
+  var sunDisk = new THREE.Mesh(new THREE.SphereGeometry(7, 20, 20), new THREE.MeshBasicMaterial({ color: 0xfff1c4, fog: false, transparent: true, opacity: 0.96 }));
+  scene.add(sunDisk);
+  var sunSprite = null;
+  (function () { var cv = document.createElement("canvas"); cv.width = cv.height = 128; var g = cv.getContext("2d"); var rg = g.createRadialGradient(64, 64, 0, 64, 64, 64); rg.addColorStop(0, "rgba(255,241,205,0.95)"); rg.addColorStop(0.28, "rgba(255,225,170,0.5)"); rg.addColorStop(1, "rgba(255,220,170,0)"); g.fillStyle = rg; g.fillRect(0, 0, 128, 128); var tx = new THREE.CanvasTexture(cv); sunSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tx, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); sunSprite.scale.setScalar(76); scene.add(sunSprite); })();
+
   var SLAB_TOP = 0.5, GF_H = 3.1, UF_H = 2.9;
 
   /* ---- excavation: dirt mounds (temp) ---- */
@@ -534,12 +599,12 @@
     grp.traverse(function (m) { if (m.isMesh) m.material.opacity = o; });
   }
 
-  var target = new THREE.Vector3(0, 3.2, 0);
+  var target = new THREE.Vector3(0, 4.3, 0);
   function setCamera(p) {
-    // a calm, restrained architectural pan — not a swooping game camera
+    // a calm, restrained architectural pan — pulled back so the sky, sun and bay read
     var e = easeInOut(p);
     var az = lerp(-0.46, 0.14, e);
-    var rad = lerp(29, 24, e), hgt = lerp(8.2, 11, e);
+    var rad = lerp(33, 26.5, e), hgt = lerp(7.4, 9.6, e);
     camera.position.set(Math.sin(az) * rad, hgt, Math.cos(az) * rad);
     camera.lookAt(target);
   }
@@ -570,6 +635,16 @@
     }
     for (var li = 0; li < lights.length; li++) lights[li].material.emissiveIntensity = e2 * 2.2;
     for (var pmi = 0; pmi < poolMeshes.length; pmi++) poolMeshes[pmi].material.emissiveIntensity = 0.15 + e2 * 0.75; // caustic glow at dusk
+    // environment: sun drops toward the horizon, water/windows/skyline warm at dusk
+    var sunPos = new THREE.Vector3(lerp(-30, -2, e2), lerp(56, 11, e2), lerp(-122, -152, e2));
+    sunDisk.position.copy(sunPos); if (sunSprite) sunSprite.position.copy(sunPos);
+    sunDisk.material.color.setHSL(lerp(0.13, 0.055, e2), lerp(0.55, 0.95, e2), lerp(0.92, 0.6, e2));
+    if (sunSprite) sunSprite.scale.setScalar(lerp(76, 120, e2));
+    matWater.color.setHSL(lerp(0.55, 0.62, e2), 0.5, lerp(0.4, 0.13, e2));
+    matWater.emissive.setHSL(0.06, 0.85, e2 * 0.10);
+    matWin.emissiveIntensity = e2 * 1.8;
+    matSky.emissiveIntensity = e2 * 0.5;
+    matCloud.color.setHSL(lerp(0.6, 0.05, e2), lerp(0.12, 0.5, e2), lerp(0.95, 0.72, e2));
     stars.material.opacity = e2 * 0.9; stars.visible = e2 > 0.02;
     var wantDusk = e2 > 0.45;
     if (wantDusk !== duskOn) { duskOn = wantDusk; scene.background = duskOn ? skyDusk : skyDay; scene.environment = duskOn ? skyDusk : skyDay; }

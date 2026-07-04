@@ -19,7 +19,7 @@
 
   /* ---------------- CONFIG — edit this block ---------------- */
   var SEQ = {
-    enabled: true,                    // ← flip to true once frames/video are in place
+    enabled: false,                    // ← flip to true once frames/video are in place
     // -- image-sequence / stills mode --
     path:   "assets/build-sequence/",
     prefix: "frame_",
