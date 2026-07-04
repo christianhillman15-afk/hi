@@ -19,7 +19,7 @@
 
   /* ---------------- CONFIG — edit this block ---------------- */
   var SEQ = {
-    enabled: false,                    // ← flip to true once frames/video are in place
+    enabled: true,                    // ← flip to true once frames/video are in place
     // -- image-sequence / stills mode --
     path:   "assets/build-sequence/",
     prefix: "frame_",
@@ -31,7 +31,8 @@
                                        // false = hard-scrub many rendered frames (video-like)
     kenBurns: true,                    // slow cinematic zoom/pan drift on the stills
     // -- OR video mode (leave "" to use the image sequence above) --
-    video:  ""                         // e.g. "assets/build-sequence/build.mp4"
+    video:  "assets/build-sequence/build.mp4",   // photoreal Higgsfield build, scrubbed on scroll
+    videoWebm: "assets/build-sequence/build.webm" // fallback for browsers without H.264
   };
   /* --------------------------------------------------------- */
 
@@ -108,13 +109,21 @@
   /* ================= VIDEO MODE ================= */
   if (SEQ.video) {
     var video = document.createElement("video");
-    video.src = SEQ.video; video.muted = true; video.playsInline = true;
-    video.preload = "auto"; video.crossOrigin = "anonymous";
+    // pick a format this browser can actually decode (H.264 mp4 works in all real browsers; webm is the fallback)
+    var canH264 = video.canPlayType('video/mp4; codecs="avc1.42E01E"');
+    var vsrc = (!canH264 && SEQ.videoWebm && video.canPlayType('video/webm; codecs="vp9"')) ? SEQ.videoWebm : SEQ.video;
+    video.muted = true; video.playsInline = true; video.preload = "auto";
+    video.setAttribute("muted", ""); video.setAttribute("playsinline", "");
+    video.style.cssText = "position:absolute;width:1px;height:1px;opacity:0;pointer-events:none";
+    document.body.appendChild(video);            // in-DOM = reliable decode + seek across browsers
     var ready = false, dur = 0, seeking = false, pending = null;
     sizeCanvas();
     video.addEventListener("loadedmetadata", function () { dur = video.duration || 0; });
     video.addEventListener("loadeddata", function () { ready = true; hideLoader(); drawCover(video); render(lastP); });
     video.addEventListener("seeked", function () { drawCover(video); if (pending !== null) { var q = pending; pending = null; render(q); } else { seeking = false; } });
+    video.addEventListener("error", function () {  // primary failed to decode → swap to the webm fallback
+      if (SEQ.videoWebm && video.src.indexOf(SEQ.videoWebm) === -1) { ready = false; video.src = SEQ.videoWebm; }
+    });
     function render(p) {
       lastP = p = clamp(p, 0, 1);
       if (!ready || !dur) return;
@@ -125,6 +134,7 @@
     window.__dk3SetBuild = function (p) { render(p); };
     window.addEventListener("resize", function () { sizeCanvas(); drawCover(video); });
     showLoader();
+    video.src = vsrc;
     render(reduce ? 1 : 0);
     return;
   }
