@@ -152,8 +152,8 @@
     } catch (err) { lenis = null; }
   }
 
-  /* ---------- Scroll reveal ---------- */
-  var reveals = $all(".reveal");
+  /* ---------- Scroll reveal (single elements + staggered groups) ---------- */
+  var reveals = $all(".reveal, .reveal-group");
   if (reduceMotion || !("IntersectionObserver" in window)) {
     reveals.forEach(function (el) { el.classList.add("is-visible"); });
   } else {
@@ -161,7 +161,7 @@
       entries.forEach(function (entry) {
         if (entry.isIntersecting) { entry.target.classList.add("is-visible"); io.unobserve(entry.target); }
       });
-    }, { threshold: 0.12, rootMargin: "0px 0px -8% 0px" });
+    }, { threshold: 0.1, rootMargin: "0px 0px -10% 0px" });
     reveals.forEach(function (el) { io.observe(el); });
   }
 

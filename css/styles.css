@@ -1643,3 +1643,53 @@ html.lenis, html.lenis body { height: auto; }
 .lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
 .lenis.lenis-stopped { overflow: hidden; }
 .lenis.lenis-smooth iframe { pointer-events: none; }
+
+/* =============================================================
+   29 · REDESIGN ELEVATION — bolder scale, cinematic scroll reveals,
+        dramatic page heroes. Shared layer: every page levels up.
+   ============================================================= */
+
+/* — Bolder typographic scale + more breathing room — */
+.display { font-size: clamp(3rem, 8.4vw, 6.8rem); letter-spacing: -0.045em; line-height: 0.98; }
+.h1 { font-size: clamp(2.5rem, 6vw, 4.7rem); letter-spacing: -0.035em; line-height: 1.02; }
+.h2 { font-size: clamp(2.05rem, 4.4vw, 3.6rem); letter-spacing: -0.03em; line-height: 1.05; }
+.lead { font-size: clamp(1.12rem, 1.6vw, 1.42rem); }
+.section { padding-block: clamp(88px, 11vw, 170px); }
+
+/* — Cinematic scroll reveals: richer distance + directional/scale/blur variants — */
+.reveal { opacity: 0; transform: translateY(40px); transition: opacity 0.9s var(--ease-2), transform 1s var(--ease-2), filter 0.9s var(--ease-2); will-change: opacity, transform; }
+.reveal.is-visible { opacity: 1; transform: none; filter: none; }
+.reveal--left  { transform: translateX(-48px); }
+.reveal--right { transform: translateX(48px); }
+.reveal--scale { transform: scale(0.9); }
+.reveal--blur  { filter: blur(12px); transform: translateY(26px); }
+.reveal--up-lg { transform: translateY(70px); }
+
+/* auto-stagger the direct children of a .reveal-group as it enters */
+.reveal-group > * { opacity: 0; transform: translateY(36px); transition: opacity 0.8s var(--ease-2), transform 0.9s var(--ease-2); will-change: opacity, transform; }
+.reveal-group.is-visible > * { opacity: 1; transform: none; }
+.reveal-group.is-visible > *:nth-child(1) { transition-delay: 0.04s; }
+.reveal-group.is-visible > *:nth-child(2) { transition-delay: 0.11s; }
+.reveal-group.is-visible > *:nth-child(3) { transition-delay: 0.18s; }
+.reveal-group.is-visible > *:nth-child(4) { transition-delay: 0.25s; }
+.reveal-group.is-visible > *:nth-child(5) { transition-delay: 0.32s; }
+.reveal-group.is-visible > *:nth-child(6) { transition-delay: 0.39s; }
+.reveal-group.is-visible > *:nth-child(7) { transition-delay: 0.46s; }
+.reveal-group.is-visible > *:nth-child(8) { transition-delay: 0.53s; }
+
+/* — Dramatic page heroes (Services / Projects / About / Contact all level up) — */
+.page-hero {
+  min-height: clamp(62vh, 72vh + 6vw, 92vh);
+  display: flex; align-items: flex-end;
+  padding-block: clamp(150px, 22vh, 260px) clamp(56px, 8vh, 100px);
+  overflow: hidden;
+}
+.page-hero__media img { opacity: 0.6; transform: scale(1.06); }
+.page-hero::after { background: linear-gradient(180deg, rgba(9,12,16,0.55) 0%, rgba(9,12,16,0.25) 40%, rgba(9,12,16,0.9) 100%); }
+.page-hero h1 { font-size: clamp(2.9rem, 7.4vw, 5.8rem); letter-spacing: -0.04em; line-height: 1.0; max-width: 15ch; }
+.page-hero p { font-size: clamp(1.14rem, 1.6vw, 1.42rem); max-width: 56ch; }
+.page-hero .breadcrumb { margin-bottom: 6px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal, .reveal-group > * { opacity: 1 !important; transform: none !important; filter: none !important; transition: none !important; }
+}
