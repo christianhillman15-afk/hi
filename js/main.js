@@ -214,8 +214,8 @@
     var p = total > 0 ? clamp(-xform.getBoundingClientRect().top / total, 0, 1) : 0;
     // drive the 3D build
     if (window.__dk3SetBuild) window.__dk3SetBuild(p);
-    // stage index: 0 site, 1 structure, 2 delivered
-    var idx = p < 0.4 ? 0 : (p < 0.78 ? 1 : 2);
+    // stage index mapped to the 7-segment build: foundation (lot→slab) / structure (columns→frame) / delivered
+    var idx = p < 0.45 ? 0 : (p < 0.83 ? 1 : 2);
     if (idx !== lastIdx) {
       lastIdx = idx;
       for (var i = 0; i < xLines.length; i++) xLines[i].classList.toggle("active", i === idx);
