@@ -26,12 +26,11 @@
     pad:    4,                         // frame_0001.jpg
     ext:    "jpg",
     first:  1,
-    count:  5,                         // number of stills (AI images) OR rendered frames
-    crossfade: true,                   // true = silky dissolve between a few AI stills;
-                                       // false = hard-scrub many rendered frames (video-like)
-    kenBurns: true,                    // slow cinematic zoom/pan drift on the stills
+    count:  141,                       // 141-frame photoreal sequence exploded from the master (4 fps)
+    crossfade: true,                   // blend neighboring frames while scrubbing
+    kenBurns: false,                   // the frames carry their own motion
     // -- OR video mode (leave "" to use the image sequence above) --
-    video:  "assets/build-sequence/build.mp4",   // photoreal Higgsfield build, scrubbed on scroll
+    video:  "",                        // frame scrubbing beats <video> seeking: zero seek latency, both directions
     videoWebm: "assets/build-sequence/build.webm" // fallback for browsers without H.264
   };
   /* --------------------------------------------------------- */
@@ -54,6 +53,8 @@
     var w = canvas.clientWidth || canvas.offsetWidth, h = canvas.clientHeight || canvas.offsetHeight;
     if (!w || !h) return;
     canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+    ctx.imageSmoothingEnabled = true;                       // resizing the canvas resets context state,
+    if ("imageSmoothingQuality" in ctx) ctx.imageSmoothingQuality = "high"; // so re-apply quality here
   }
   function drawCover(src, alpha, kb) {
     if (!src) return;
@@ -160,11 +161,12 @@
     }
     return null;
   }
-  function paint() {
-    var cw = canvas.width, ch = canvas.height, kb = kbState(), p = lastP;
+  function paint(p) {
+    lastP = p;
+    var cw = canvas.width, ch = canvas.height, kb = kbState();
     ctx.clearRect(0, 0, cw, ch);
     if (SEQ.crossfade && SEQ.count > 1) {
-      // silky dissolve between the two nearest stills
+      // blend the two nearest frames for a continuous, liquid scrub
       var fpos = p * (SEQ.count - 1), i = Math.floor(fpos), f = fpos - i;
       var a = nearestLoaded(i), bb = nearestLoaded(Math.min(i + 1, SEQ.count - 1));
       if (a) drawCover(a, 1, kb);
@@ -174,33 +176,49 @@
       if (img) drawCover(img, 1, kb);
     }
   }
-  function render(p) { lastP = clamp(p, 0, 1); if (!KB) paint(); } // when KB runs, the rAF loop paints
-  if (KB) { (function loop() { paint(); requestAnimationFrame(loop); })(); }
+
+  /* Motion smoothing: scroll sets a target; a rAF loop eases the shown
+     position toward it. Kills the stepping of raw scroll input (esp. mobile). */
+  var target = reduce ? 1 : 0, cur = target, EASE = reduce ? 1 : 0.16;
+  function render(p) { target = clamp(p, 0, 1); }
+  (function motion() {
+    var d = target - cur;
+    if (d !== 0 || KB) {
+      cur = Math.abs(d) < 0.0004 ? target : cur + d * EASE;
+      paint(cur);
+    }
+    requestAnimationFrame(motion);
+  })();
 
   sizeCanvas();
   showLoader();
-  // Prioritise the first frame so we can paint immediately, then stream the rest.
   function load(i) {
+    if (frames[i]) return;
     var img = new Image();
     img.decoding = "async";
     img.onload = img.onerror = function () {
       loaded++; setLoader(loaded / SEQ.count);
-      if (img.naturalWidth && !ready) { ready = true; render(lastP); }
+      if (img.naturalWidth && !ready) { ready = true; paint(cur); }
       if (loaded >= SEQ.count) hideLoader();
     };
     img.src = frameURL(i);
     frames[i] = img;
   }
-  load(0);
+  // Coarse-first streaming: every 10th frame loads first so the whole build is
+  // scrubbable within seconds; the in-between frames then sharpen the motion.
+  var order = [0];
+  for (var c = 10; c < SEQ.count; c += 10) order.push(c);
+  for (var r = 0; r < SEQ.count; r++) if (r % 10 !== 0) order.push(r);
+  load(order[0]);
   var q = 1;
-  (function pump() { // stagger requests so we don't saturate the connection
+  (function pump() {
     var batch = 6;
-    while (batch-- > 0 && q < SEQ.count) load(q++);
-    if (q < SEQ.count) setTimeout(pump, 60);
+    while (batch-- > 0 && q < order.length) load(order[q++]);
+    if (q < order.length) setTimeout(pump, 60);
   })();
 
   window.__dk3SetBuild = function (p) { render(p); };
-  window.addEventListener("resize", function () { sizeCanvas(); render(lastP); });
-  window.addEventListener("load", function () { setTimeout(function () { sizeCanvas(); render(lastP); }, 200); });
-  render(reduce ? 1 : 0);
+  window.addEventListener("resize", function () { sizeCanvas(); paint(cur); });
+  window.addEventListener("load", function () { setTimeout(function () { sizeCanvas(); paint(cur); }, 200); });
+  paint(cur);
 })();
