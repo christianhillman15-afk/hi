@@ -1460,7 +1460,7 @@ body.intro-active { overflow: hidden; }
    A pinned, cinematic 3-stage crossfade with serif kinetic type,
    a chapter index and a progress bar. Recreates the reel effect.
    ============================================================= */
-.xform { position: relative; height: 520vh; background: #000; } /* longer scrub room for the 35s piece-by-piece build */
+.xform { position: relative; height: 640vh; background: #000; } /* generous scrub room: fewer frames per scroll-tick = smoother, more cinematic */
 .xform__sticky { position: sticky; top: 0; height: 100vh; overflow: hidden; }
 .xform__layer { position: absolute; inset: 0; opacity: 0; will-change: opacity; }
 .xform__layer img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.06); }

@@ -47,7 +47,7 @@
   var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var clamp = function (v, a, b) { return Math.max(a, Math.min(b, v)); };
   var ctx = canvas.getContext("2d");
-  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+  var dpr = Math.min(window.devicePixelRatio || 1, 1.5); // capped: full-bleed film content — indistinguishable, much cheaper to paint
   var lastP = 0;
 
   function sizeCanvas() {
@@ -55,11 +55,11 @@
     if (!w || !h) return;
     canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
     ctx.imageSmoothingEnabled = true;                       // resizing the canvas resets context state,
-    if ("imageSmoothingQuality" in ctx) ctx.imageSmoothingQuality = "high"; // so re-apply quality here
+    if ("imageSmoothingQuality" in ctx) ctx.imageSmoothingQuality = "medium"; // medium = visually identical in motion, faster per-frame
   }
   function drawCover(src, alpha, kb) {
     if (!src) return;
-    var iw = src.naturalWidth || src.videoWidth, ih = src.naturalHeight || src.videoHeight;
+    var iw = src.naturalWidth || src.videoWidth || src.width, ih = src.naturalHeight || src.videoHeight || src.height;
     if (!iw || !ih) return;
     var cw = canvas.width, ch = canvas.height;
     var s = Math.max(cw / iw, ch / ih);
@@ -153,12 +153,52 @@
     while (n.length < SEQ.pad) n = "0" + n;
     return SEQ.path + SEQ.prefix + n + "." + SEQ.ext + (SEQ.rev ? "?r=" + SEQ.rev : "");
   }
-  function nearestLoaded(idx) {
+  /* ---- GPU bitmap window: the anti-jank core -------------------------
+     Drawing an <img> re-decodes the JPEG on the main thread whenever the
+     browser's decode cache evicted it (10–40ms hitches while scrubbing).
+     Keep a sliding window of pre-decoded ImageBitmaps around the current
+     frame, decoded ahead in the scroll direction, and draw those instead. */
+  var HAS_BM = typeof createImageBitmap === "function";
+  var bitmaps = new Array(SEQ.count), bmPending = {};
+  var BM_BACK = 12, BM_FWD = 22, BM_MAX = 44;
+  function reqBitmap(i) {
+    if (!HAS_BM || bitmaps[i] || bmPending[i]) return;
+    var img = frames[i];
+    if (!img || !img.complete || !img.naturalWidth) return;
+    bmPending[i] = true;
+    createImageBitmap(img).then(function (bm) { bitmaps[i] = bm; delete bmPending[i]; })
+                          .catch(function () { delete bmPending[i]; });
+  }
+  var evictTick = 0;
+  function manageWindow(center, dir) {
+    if (!HAS_BM) return;
+    var back = dir < 0 ? BM_FWD : BM_BACK, fwd = dir < 0 ? BM_BACK : BM_FWD;
+    var from = Math.max(0, center - back), to = Math.min(SEQ.count - 1, center + fwd);
+    for (var i = center; i <= to; i++) reqBitmap(i);
+    for (var j = center - 1; j >= from; j--) reqBitmap(j);
+    if (++evictTick % 30 === 0) {                     // occasionally drop bitmaps far outside the window
+      var live = 0, k;
+      for (k = 0; k < SEQ.count; k++) if (bitmaps[k]) live++;
+      if (live > BM_MAX) for (k = 0; k < SEQ.count; k++) {
+        if (bitmaps[k] && (k < from - 6 || k > to + 6)) {
+          try { bitmaps[k].close(); } catch (e) {}
+          bitmaps[k] = null;
+        }
+      }
+    }
+  }
+  function drawableAt(idx) {
+    if (bitmaps[idx]) return bitmaps[idx];
     if (frames[idx] && frames[idx].complete && frames[idx].naturalWidth) return frames[idx];
+    return null;
+  }
+  function nearestDrawable(idx) {
+    var d0 = drawableAt(idx);
+    if (d0) return d0;
     for (var d = 1; d < SEQ.count; d++) {
       var a = idx - d, b = idx + d;
-      if (a >= 0 && frames[a] && frames[a].complete && frames[a].naturalWidth) return frames[a];
-      if (b < SEQ.count && frames[b] && frames[b].complete && frames[b].naturalWidth) return frames[b];
+      if (a >= 0 && (d0 = drawableAt(a))) return d0;
+      if (b < SEQ.count && (d0 = drawableAt(b))) return d0;
     }
     return null;
   }
@@ -169,21 +209,22 @@
     if (SEQ.crossfade && SEQ.count > 1) {
       // blend the two nearest frames for a continuous, liquid scrub
       var fpos = p * (SEQ.count - 1), i = Math.floor(fpos), f = fpos - i;
-      var a = nearestLoaded(i), bb = nearestLoaded(Math.min(i + 1, SEQ.count - 1));
+      var a = nearestDrawable(i), bb = nearestDrawable(Math.min(i + 1, SEQ.count - 1));
       if (a) drawCover(a, 1, kb);
       if (bb && bb !== a && f > 0.001) drawCover(bb, f < 1 ? f : 1, kb);
     } else {
-      var img = nearestLoaded(Math.round(p * (SEQ.count - 1)));
+      var img = nearestDrawable(Math.round(p * (SEQ.count - 1)));
       if (img) drawCover(img, 1, kb);
     }
   }
 
   /* Motion smoothing: scroll sets a target; a rAF loop eases the shown
      position toward it. Kills the stepping of raw scroll input (esp. mobile). */
-  var target = reduce ? 1 : 0, cur = target, EASE = reduce ? 1 : 0.16;
+  var target = reduce ? 1 : 0, cur = target, EASE = reduce ? 1 : 0.13;
   function render(p) { target = clamp(p, 0, 1); }
   (function motion() {
     var d = target - cur;
+    manageWindow(Math.round(cur * (SEQ.count - 1)), d < 0 ? -1 : 1);  // decode ahead of the scroll
     if (d !== 0 || KB) {
       cur = Math.abs(d) < 0.0004 ? target : cur + d * EASE;
       paint(cur);
