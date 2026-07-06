@@ -27,6 +27,7 @@
     ext:    "jpg",
     first:  1,
     count:  141,                       // 141-frame photoreal sequence exploded from the master (4 fps)
+    rev:    "9",                       // bump when frame CONTENT changes (same filenames) to bust the 30-day cache
     crossfade: true,                   // blend neighboring frames while scrubbing
     kenBurns: false,                   // the frames carry their own motion
     // -- OR video mode (leave "" to use the image sequence above) --
@@ -150,7 +151,7 @@
   function frameURL(i) {
     var n = String(SEQ.first + i);
     while (n.length < SEQ.pad) n = "0" + n;
-    return SEQ.path + SEQ.prefix + n + "." + SEQ.ext;
+    return SEQ.path + SEQ.prefix + n + "." + SEQ.ext + (SEQ.rev ? "?r=" + SEQ.rev : "");
   }
   function nearestLoaded(idx) {
     if (frames[idx] && frames[idx].complete && frames[idx].naturalWidth) return frames[idx];
