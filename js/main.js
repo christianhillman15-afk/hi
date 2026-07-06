@@ -488,6 +488,68 @@
     window.addEventListener("pageshow", function (e) { if (e.persisted) body.classList.remove("is-leaving"); });
   }
 
+  /* ---------- Chapter dot-nav (auto-built from the page's sections) ---------- */
+  (function () {
+    if (window.innerWidth < 1100) return;
+    var sections = $all("main > section");
+    if (sections.length < 3) return;
+    var nav = doc.createElement("nav");
+    nav.className = "chapter-nav";
+    nav.setAttribute("aria-label", "Page sections");
+    var links = [];
+    sections.forEach(function (sec, i) {
+      var label =
+        (sec.classList.contains("xform") && "The Build") ||
+        (sec.classList.contains("hero") && "DK3") ||
+        (sec.classList.contains("page-hero") && "Top") ||
+        (sec.querySelector(".eyebrow") && sec.querySelector(".eyebrow").textContent.trim()) ||
+        (sec.querySelector("h2") && sec.querySelector("h2").textContent.trim().slice(0, 26)) ||
+        ("Section " + (i + 1));
+      if (!sec.id) sec.id = "sec-" + i;
+      var a = doc.createElement("a");
+      a.href = "#" + sec.id;
+      a.innerHTML = '<span class="tip"></span>';
+      a.querySelector(".tip").textContent = label;
+      a.addEventListener("click", function (e) {
+        e.preventDefault();
+        if (lenis) lenis.scrollTo(sec, { offset: 0 });
+        else sec.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" });
+      });
+      nav.appendChild(a);
+      links.push({ a: a, sec: sec });
+    });
+    body.appendChild(nav);
+    function setActive() {
+      var mid = window.innerHeight * 0.5, best = 0, bestDist = Infinity;
+      for (var i = 0; i < links.length; i++) {
+        var r = links[i].sec.getBoundingClientRect();
+        var d = (r.top <= mid && r.bottom >= mid) ? 0 : Math.min(Math.abs(r.top - mid), Math.abs(r.bottom - mid));
+        if (d < bestDist) { bestDist = d; best = i; }
+      }
+      links.forEach(function (l, i) { l.a.classList.toggle("active", i === best); });
+    }
+    var t2 = false;
+    window.addEventListener("scroll", function () {
+      if (t2) return; t2 = true;
+      requestAnimationFrame(function () { setActive(); t2 = false; });
+    }, { passive: true });
+    setActive();
+  })();
+
+  /* ---------- Aurora glows behind the dark statement/CTA sections ---------- */
+  if (!reduceMotion) {
+    $all(".statement, section.dark.ink-950").forEach(function (sec, i) {
+      var g = doc.createElement("div");
+      g.className = "aurora";
+      g.style.top = (i % 2 ? "auto" : "-18%");
+      g.style.bottom = (i % 2 ? "-18%" : "auto");
+      g.style.left = (i % 2 ? "auto" : "-12%");
+      g.style.right = (i % 2 ? "-12%" : "auto");
+      g.setAttribute("aria-hidden", "true");
+      sec.insertBefore(g, sec.firstChild);
+    });
+  }
+
   /* ---------- Footer year ---------- */
   var yearEl = $("#year");
   if (yearEl) yearEl.textContent = new Date().getFullYear();

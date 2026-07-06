@@ -1693,3 +1693,91 @@ html.lenis, html.lenis body { height: auto; }
 @media (prefers-reduced-motion: reduce) {
   .reveal, .reveal-group > * { opacity: 1 !important; transform: none !important; filter: none !important; transition: none !important; }
 }
+
+/* =============================================================
+   30 · ORGANIZED + FLASHY — chapter nav, numbered sections,
+        shine borders, gradient glows, button sheen
+   ============================================================= */
+
+/* — numbered sections: the eyebrow's gold line becomes an auto chapter number — */
+main { counter-reset: chap; }
+main .eyebrow::before {
+  counter-increment: chap;
+  content: counter(chap, decimal-leading-zero);
+  width: auto; height: auto; background: none; border-radius: 0;   /* neutralize the decorative line box */
+  font-family: var(--font-mono); font-weight: 600; font-size: 0.92em;
+  color: var(--gold-600);
+  border-bottom: 2px solid var(--gold);
+  padding-bottom: 2px; line-height: 1;
+}
+main .dark .eyebrow::before, main .eyebrow.on-dark::before { color: var(--gold); }
+
+/* — chapter dot-nav (right edge, all pages, wide screens) — */
+.chapter-nav {
+  position: fixed; right: 22px; top: 50%; transform: translateY(-50%);
+  z-index: 90; display: flex; flex-direction: column; gap: 14px;
+}
+.chapter-nav a {
+  position: relative; width: 10px; height: 10px; border-radius: 50%;
+  background: rgba(128,128,128,0.35); border: 1px solid rgba(128,128,128,0.35);
+  transition: background 0.3s ease, transform 0.3s var(--ease), border-color 0.3s ease;
+}
+.chapter-nav a:hover { transform: scale(1.35); }
+.chapter-nav a.active { background: var(--gold); border-color: var(--gold); box-shadow: 0 0 10px rgba(224,165,38,0.55); transform: scale(1.2); }
+.chapter-nav a .tip {
+  position: absolute; right: 22px; top: 50%; transform: translateY(-50%) translateX(6px);
+  white-space: nowrap; font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: #fff; background: rgba(10,13,17,0.92);
+  padding: 5px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.14);
+  opacity: 0; pointer-events: none; transition: opacity 0.25s ease, transform 0.3s var(--ease);
+}
+.chapter-nav a:hover .tip { opacity: 1; transform: translateY(-50%) translateX(0); }
+@media (max-width: 1099px) { .chapter-nav { display: none; } }
+
+/* — shine border: rotating conic gradient ring on card hover — */
+.card { position: relative; }
+.card::after {
+  content: ""; position: absolute; inset: -1px; border-radius: inherit; padding: 1.5px;
+  background: conic-gradient(from var(--shine-a, 0deg), transparent 0 40deg, rgba(224,165,38,0.9) 90deg, transparent 140deg 360deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  opacity: 0; transition: opacity 0.35s ease; pointer-events: none;
+}
+@property --shine-a { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
+.card:hover::after { opacity: 1; animation: shineSpin 2.6s linear infinite; }
+@keyframes shineSpin { to { --shine-a: 360deg; } }
+
+/* — gold aurora glows behind the statement + CTA sections — */
+.statement::before { box-shadow: none; }
+.statement, .section.dark:last-of-type { position: relative; overflow: hidden; }
+.aurora {
+  position: absolute; width: 60vw; height: 60vw; max-width: 900px; max-height: 900px;
+  border-radius: 50%; pointer-events: none; z-index: 0;
+  background: radial-gradient(circle, rgba(224,165,38,0.14) 0%, rgba(224,165,38,0.05) 40%, transparent 70%);
+  filter: blur(20px);
+  animation: auroraDrift 14s ease-in-out infinite alternate;
+}
+@keyframes auroraDrift { from { transform: translate(-6%, -4%) scale(1); } to { transform: translate(6%, 5%) scale(1.15); } }
+
+/* — primary button sheen sweep — */
+.btn:not(.btn--ghost) { position: relative; overflow: hidden; }
+.btn:not(.btn--ghost)::before {
+  content: ""; position: absolute; top: 0; bottom: 0; width: 40%;
+  left: -60%; transform: skewX(-20deg);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.45), transparent);
+  animation: btnSheen 4.5s var(--ease) infinite;
+}
+@keyframes btnSheen { 0%, 55% { left: -60%; } 75%, 100% { left: 130%; } }
+
+/* — marquee shimmer — */
+.marquee__item {
+  background: linear-gradient(100deg, var(--on-dark-2) 42%, #fff 50%, var(--on-dark-2) 58%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  animation: marqueeShimmer 6.5s linear infinite;
+}
+@keyframes marqueeShimmer { from { background-position: 220% 0; } to { background-position: -120% 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .card:hover::after, .btn:not(.btn--ghost)::before, .aurora, .marquee__item { animation: none !important; }
+}
