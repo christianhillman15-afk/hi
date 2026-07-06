@@ -116,20 +116,25 @@
     video.setAttribute("muted", ""); video.setAttribute("playsinline", "");
     video.style.cssText = "position:absolute;width:1px;height:1px;opacity:0;pointer-events:none";
     document.body.appendChild(video);            // in-DOM = reliable decode + seek across browsers
-    var ready = false, dur = 0, seeking = false, pending = null;
+    var ready = false, dur = 0, seeking = false, pending = null, seekT0 = 0;
     sizeCanvas();
     video.addEventListener("loadedmetadata", function () { dur = video.duration || 0; });
     video.addEventListener("loadeddata", function () { ready = true; hideLoader(); drawCover(video); render(lastP); });
-    video.addEventListener("seeked", function () { drawCover(video); if (pending !== null) { var q = pending; pending = null; render(q); } else { seeking = false; } });
+    video.addEventListener("seeked", function () {
+      seeking = false;               // clear FIRST so a queued scroll position can actually re-seek (both directions)
+      drawCover(video);
+      if (pending !== null) { var q = pending; pending = null; render(q); }
+    });
     video.addEventListener("error", function () {  // primary failed to decode → swap to the webm fallback
       if (SEQ.videoWebm && video.src.indexOf(SEQ.videoWebm) === -1) { ready = false; video.src = SEQ.videoWebm; }
     });
     function render(p) {
       lastP = p = clamp(p, 0, 1);
       if (!ready || !dur) return;
-      var t = p * Math.max(0, dur - 0.05);
-      if (seeking) { pending = p; return; }
-      seeking = true; try { video.currentTime = t; } catch (e) { seeking = false; }
+      // watchdog: if the browser ever drops a seeked event, don't stay frozen — reissue after 600ms
+      if (seeking && Date.now() - seekT0 < 600) { pending = p; return; }
+      seeking = true; seekT0 = Date.now(); pending = null;
+      try { video.currentTime = p * Math.max(0, dur - 0.05); } catch (e) { seeking = false; }
     }
     window.__dk3SetBuild = function (p) { render(p); };
     window.addEventListener("resize", function () { sizeCanvas(); drawCover(video); });
