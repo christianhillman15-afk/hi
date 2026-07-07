@@ -1781,3 +1781,20 @@ main .dark .eyebrow::before, main .eyebrow.on-dark::before { color: var(--gold);
 @media (prefers-reduced-motion: reduce) {
   .card:hover::after, .btn:not(.btn--ghost)::before, .aurora, .marquee__item { animation: none !important; }
 }
+
+/* =============================================================
+   31 · STRUCTURAL ORDER — one consistent grid line + header
+        treatment for every content section, all five pages
+   ============================================================= */
+
+/* every content section opens on an architectural hairline rule */
+.section > .container { border-top: 1px solid var(--line-light); padding-top: clamp(36px, 4.5vw, 60px); }
+.section.dark > .container, .section.ink-950 > .container { border-top-color: rgba(255,255,255,0.13); }
+
+/* one header discipline: everything left-aligned on the grid, same measure */
+.section-head.is-centered { margin-inline: 0; text-align: left; }
+.section-head.is-centered .eyebrow.is-centered::after { display: none; }
+.section-head { max-width: 66ch; }
+
+/* the CTA + statement keep their own stage (no rule) */
+.statement > .container { border-top: 0; padding-top: 0; }
