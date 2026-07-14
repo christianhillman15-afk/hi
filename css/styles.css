@@ -1798,3 +1798,18 @@ main .dark .eyebrow::before, main .eyebrow.on-dark::before { color: var(--gold);
 
 /* the CTA + statement keep their own stage (no rule) */
 .statement > .container { border-top: 0; padding-top: 0; }
+
+/* mobile: full-frame letterboxed build (drawn by buildseq) + shorter thumb-friendly scrub */
+@media (max-width: 768px) {
+  .xform { height: 440vh; }
+  .xform__line { font-size: clamp(1.6rem, 7.4vw, 2.4rem); }
+}
+
+/* mobile header + build chrome polish */
+@media (max-width: 680px) {
+  .brand__name { font-size: 0.92rem; white-space: nowrap; }
+  .brand__sub { font-size: 0.58rem; }
+  .site-header .btn { padding: 0.62em 1.05em; font-size: 0.82rem; white-space: nowrap; }
+  .xform__top { font-size: 0.62rem; gap: 10px; }
+  .xform__brand, .xform__est { white-space: nowrap; }
+}

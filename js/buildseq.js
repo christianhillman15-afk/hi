@@ -62,6 +62,22 @@
     var iw = src.naturalWidth || src.videoWidth || src.width, ih = src.naturalHeight || src.videoHeight || src.height;
     if (!iw || !ih) return;
     var cw = canvas.width, ch = canvas.height;
+    var a = (alpha == null ? 1 : alpha);
+
+    // Portrait screens: cover-fit would crop ~70% of the wide frame and hide the
+    // house. Show the FULL frame (contain-fit, vertically centered) over a dimmed
+    // ambient cover-fill of the same frame — the premium letterbox treatment.
+    if (cw / ch < (iw / ih) * 0.72) {
+      var sc = Math.max(cw / iw, ch / ih);              // ambient fill behind
+      ctx.globalAlpha = a * 0.28;
+      ctx.drawImage(src, (cw - iw * sc) / 2, (ch - ih * sc) / 2, iw * sc, ih * sc);
+      var sf = Math.min(cw / iw, ch / ih);              // the full frame, sharp
+      ctx.globalAlpha = a;
+      ctx.drawImage(src, (cw - iw * sf) / 2, (ch - ih * sf) / 2, iw * sf, ih * sf);
+      ctx.globalAlpha = 1;
+      return;
+    }
+
     var s = Math.max(cw / iw, ch / ih);
     if (kb) s *= kb.z;                    // extra zoom for the drift
     var w = iw * s, h = ih * s;
@@ -70,7 +86,7 @@
       ox = clamp(ox + kb.x * cw, cw - w, 0);
       oy = clamp(oy + kb.y * ch, ch - h, 0);
     }
-    ctx.globalAlpha = (alpha == null ? 1 : alpha);
+    ctx.globalAlpha = a;
     ctx.drawImage(src, ox, oy, w, h);
     ctx.globalAlpha = 1;
   }
